@@ -13,7 +13,7 @@ $servers = @(
     },
     @{
         Name = "Render (Backup 1)"
-        URL = "https://licence-api-zsbg.onrender.com"
+        URL = "https://licence-api-6evg.onrender.com"
     },
     @{
         Name = "Koyeb (Backup 2)"
