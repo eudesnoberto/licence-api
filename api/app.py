@@ -435,18 +435,23 @@ def admin_devices():
         # Converter rows para dict (compatível com SQLite e MySQL)
         rows = []
         for row in rows_data:
-            if USE_MYSQL and hasattr(row, '_data'):
-                # MySQL: Row wrapper tem _data como dict
-                row_dict = row._data.copy()
-            elif hasattr(row, 'keys'):
-                # SQLite Row ou MySQL dict
-                row_dict = {key: row[key] for key in row.keys()}
+            # MySQL com DictCursor já retorna dict diretamente
+            if USE_MYSQL:
+                # pymysql com DictCursor retorna dict diretamente
+                if isinstance(row, dict):
+                    row_dict = row.copy()
+                else:
+                    # Fallback: tentar acessar como dict
+                    row_dict = dict(row) if hasattr(row, '__iter__') else {}
             else:
-                # Fallback: tentar dict() normal
-                try:
-                    row_dict = dict(row)
-                except:
-                    row_dict = {}
+                # SQLite: Row precisa ser convertido
+                if hasattr(row, 'keys'):
+                    row_dict = {key: row[key] for key in row.keys()}
+                else:
+                    try:
+                        row_dict = dict(row)
+                    except:
+                        row_dict = {}
             
             # Garantir que created_by existe mesmo em registros antigos
             if "created_by" not in row_dict:
