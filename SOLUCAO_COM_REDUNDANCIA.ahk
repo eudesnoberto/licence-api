@@ -12,10 +12,14 @@
 ; O sistema tentará cada servidor até encontrar um que funcione
 
 ; MÉTODO 1: Array de servidores (RECOMENDADO)
+; ============================================================================
+; Configure os servidores em ordem de prioridade
+; O sistema tentará cada servidor até encontrar um que funcione
+; ============================================================================
 g_LicenseAPI_Servers := []
-g_LicenseAPI_Servers[1] := "https://api.fartgreen.fun"        ; Servidor Principal
-g_LicenseAPI_Servers[2] := "https://api-backup1.fartgreen.fun" ; Backup 1
-g_LicenseAPI_Servers[3] := "https://api-backup2.fartgreen.fun" ; Backup 2
+g_LicenseAPI_Servers[1] := "https://api.fartgreen.fun"                     ; Servidor Principal
+g_LicenseAPI_Servers[2] := "https://licence-api-zsbg.onrender.com"         ; Backup 1 (Render)
+; g_LicenseAPI_Servers[3] := "https://SEU-PROJETO-FLY.fly.dev"              ; Backup 2 (Fly.io - Opcional)
 
 ; OU MÉTODO 2: Servidor único (compatibilidade)
 ; Descomente se quiser usar apenas um servidor:
@@ -308,8 +312,51 @@ License_Verify() {
         
         FileDelete, %tempPsFile%
         
-        ; Se obteve resposta válida (não é erro), processa
-        If (response And StrLen(response) > 0 And InStr(response, "ERROR:") != 1) {
+        ; ========================================================================
+        ; DETECTA TIPO DE RESPOSTA
+        ; ========================================================================
+        ; 1. Erro de conexão (deve tentar próximo servidor)
+        ; 2. Resposta JSON válida com allow:true (sucesso)
+        ; 3. Resposta JSON válida com allow:false (erro de licença - não tenta próximo)
+        ; 4. Resposta inválida/HTML (erro de conexão - tenta próximo)
+        ; ========================================================================
+        
+        isConnectionError := false
+        isJsonResponse := false
+        
+        ; Verifica se é erro de conexão
+        If (InStr(response, "ERROR:") = 1) {
+            isConnectionError := true
+            FileAppend, [%A_Index%/%maxServers%] Servidor %currentServer% - Erro de conexão: %response%`n, %A_Temp%\license_server_failover.txt
+        } Else If (!response Or StrLen(response) = 0) {
+            isConnectionError := true
+            FileAppend, [%A_Index%/%maxServers%] Servidor %currentServer% - Resposta vazia`n, %A_Temp%\license_server_failover.txt
+        } Else If (InStr(response, "<!doctype") = 1 Or InStr(response, "<html") = 1 Or InStr(response, "Cloudflare") > 0) {
+            ; Resposta HTML (servidor offline ou erro)
+            isConnectionError := true
+            FileAppend, [%A_Index%/%maxServers%] Servidor %currentServer% - Resposta HTML (servidor offline?)`n, %A_Temp%\license_server_failover.txt
+        } Else If (InStr(response, "{") > 0 And InStr(response, "}") > 0 And (InStr(response, """allow"":") > 0)) {
+            ; Parece ser JSON válido com campo "allow" (resposta da API)
+            isJsonResponse := true
+        } Else {
+            ; Resposta inválida (não é JSON nem erro conhecido)
+            isConnectionError := true
+            FileAppend, [%A_Index%/%maxServers%] Servidor %currentServer% - Resposta inválida: %response%`n, %A_Temp%\license_server_failover.txt
+        }
+        
+        ; Se é erro de conexão, tenta próximo servidor
+        If (isConnectionError) {
+            If (A_Index < maxServers) {
+                FileAppend, Tentando próximo servidor...`n, %A_Temp%\license_server_failover.txt
+                Continue
+            } Else {
+                ; Último servidor também falhou - vai para modo offline
+                Break
+            }
+        }
+        
+        ; Se obteve resposta JSON válida, processa
+        If (isJsonResponse And response And StrLen(response) > 0) {
             ; Verifica se é sucesso
             allowTrue := false
             If (InStr(response, """allow"":true") > 0) {
@@ -380,6 +427,8 @@ License_Verify() {
             }
             
             If (allowFalse) {
+                ; Resposta JSON válida mas licença negada - NÃO tenta próximo servidor
+                ; (pois é erro de licença, não de conexão)
                 msg := "Licença inválida ou expirada"
                 If (InStr(response, """msg"":""") > 0) {
                     RegExMatch(response, """msg"":""([^""]+)""", match)
@@ -388,18 +437,21 @@ License_Verify() {
                     }
                 }
                 g_LicenseVerify_Message := msg
+                FileAppend, [%A_Index%/%maxServers%] Servidor %currentServer% - Licença negada: %msg%`n, %A_Temp%\license_server_failover.txt
                 return false
             }
-        }
-        
-        ; Se chegou aqui, este servidor falhou - tenta próximo
-        If (A_Index < maxServers) {
-            FileAppend, Servidor %A_Index% falhou (%currentServer%) - Tentando próximo...`n, %A_Temp%\license_server_failover.txt
-            Continue
+        } Else {
+            ; Se chegou aqui e não é JSON válido nem erro de conexão, algo estranho
+            ; Tenta próximo servidor se houver
+            If (A_Index < maxServers) {
+                FileAppend, [%A_Index%/%maxServers%] Servidor %currentServer% - Resposta inválida, tentando próximo...`n, %A_Temp%\license_server_failover.txt
+                Continue
+            }
         }
     }
     
-    ; Se todos os servidores falharam, tenta modo offline
+    ; Se todos os servidores falharam (erro de conexão), tenta modo offline
+    FileAppend, Todos os servidores falharam - Tentando modo offline...`n, %A_Temp%\license_server_failover.txt
     g_LicenseVerify_Message := "Todos os servidores indisponíveis"
     g_LicenseVerify_Offline := true
     
@@ -407,12 +459,18 @@ License_Verify() {
     If (tokenJson And StrLen(tokenJson) > 0) {
         offlineValid := License_Verify_Offline(tokenJson)
         If (offlineValid) {
+            FileAppend, Modo offline ativado com sucesso!`n, %A_Temp%\license_offline_success.txt
             g_LicenseVerify_Message := "Licença válida (modo offline - todos os servidores indisponíveis)"
             g_LicenseVerify_Offline := true
             return true
+        } Else {
+            FileAppend, Modo offline falhou - token inválido ou expirado`n, %A_Temp%\license_offline_failed.txt
         }
+    } Else {
+        FileAppend, Modo offline não disponível - nenhum token salvo`n, %A_Temp%\license_offline_no_token.txt
     }
     
+    g_LicenseVerify_Message := "Todos os servidores indisponíveis e modo offline não disponível"
     return false
 }
 
