@@ -60,3 +60,18 @@ Thumbs.db
 # Arquivos de backup
 *.bak
 *.backup
+backup_banco_local.json
+
+# Firebase
+frontend/.firebase/
+
+# Scripts temporários de teste/correção
+*_corrigir*.py
+*_testar*.py
+*_verificar*.py
+*_atualizar*.py
+*_aguardar*.py
+cadastrar_tudo_render.py
+exportar_banco_local.py
+sincronizar_bancos.py
+sincronizar_automatico.py
