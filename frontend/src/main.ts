@@ -313,7 +313,7 @@ async function getUserProfile(): Promise<{ username: string; email: string | nul
 async function updateUserProfile(email: string): Promise<void> {
   if (!authToken) throw new Error('Não autenticado')
   const res = await fetchWithFallback('/user/profile', {
-    method: 'POST',
+    method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${authToken}`,
