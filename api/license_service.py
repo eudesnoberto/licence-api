@@ -3,11 +3,30 @@ from datetime import date, datetime, timezone, timedelta
 from typing import Any, Dict, Optional, List, Tuple
 
 import config
-from db import get_conn, get_cursor
+from db import get_conn, get_cursor, USE_MYSQL
 
 
 def _row_to_dict(row) -> Dict[str, Any]:
-    return dict(row) if row is not None else {}
+    if row is None:
+        return {}
+    
+    # MySQL com DictCursor já retorna dict diretamente
+    if USE_MYSQL:
+        if isinstance(row, dict):
+            return row.copy()
+        # Se for Row wrapper, acessar _data
+        if hasattr(row, '_data'):
+            return row._data.copy()
+    
+    # SQLite: Row precisa ser convertido
+    if hasattr(row, 'keys'):
+        return {key: row[key] for key in row.keys()}
+    
+    # Fallback: tentar dict() normal
+    try:
+        return dict(row)
+    except:
+        return {}
 
 
 def fetch_device(device_id: str) -> Optional[Dict[str, Any]]:
