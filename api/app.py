@@ -174,6 +174,22 @@ def health():
     return json_response({"status": "ok"}, 200)
 
 
+@app.route("/ping", methods=["GET"])
+def ping():
+    """
+    Endpoint de keep-alive para manter o servidor ativo.
+    Pode ser chamado por serviços externos (UptimeRobot, cron-job.org, etc.)
+    para evitar que o servidor 'durma' no plano gratuito do Render.
+    """
+    import datetime
+    return json_response({
+        "status": "ok",
+        "message": "Server is alive",
+        "timestamp": datetime.datetime.utcnow().isoformat(),
+        "server": "license-api"
+    }, 200)
+
+
 @app.route("/verify", methods=["GET"])
 def verify():
     id_ = (request.args.get("id") or "").strip()
@@ -1277,6 +1293,32 @@ except ImportError:
     scheduler = None
 
 if __name__ == "__main__":
+    # Keep-alive interno (apenas se variável de ambiente estiver definida)
+    # Isso ajuda a manter servidor ativo, mas keep-alive externo é mais confiável
+    import os
+    import threading
+    import time
+    
+    ENABLE_INTERNAL_KEEP_ALIVE = os.getenv("ENABLE_INTERNAL_KEEP_ALIVE", "false").lower() == "true"
+    KEEP_ALIVE_URL = os.getenv("KEEP_ALIVE_URL", "")
+    
+    if ENABLE_INTERNAL_KEEP_ALIVE and KEEP_ALIVE_URL:
+        def keep_alive_loop():
+            """Faz ping periódico no próprio servidor para mantê-lo ativo"""
+            import requests
+            interval = 300  # 5 minutos
+            while True:
+                try:
+                    time.sleep(interval)
+                    requests.get(f"{KEEP_ALIVE_URL}/ping", timeout=10)
+                    logger.debug("Keep-alive interno executado")
+                except Exception as e:
+                    logger.warning(f"Erro no keep-alive interno: {e}")
+        
+        keep_alive_thread = threading.Thread(target=keep_alive_loop, daemon=True)
+        keep_alive_thread.start()
+        logger.info("Keep-alive interno iniciado (recomendado usar serviço externo como UptimeRobot)")
+    
     # Inicia scheduler
     if SCHEDULER_AVAILABLE and config.SMTP_ENABLED:
         scheduler.start()
