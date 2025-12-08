@@ -103,3 +103,9 @@ if ($offline -eq 0) {
     Write-Host "❌ Todos os servidores estão offline!" -ForegroundColor Red
 }
 
+Write-Host ""
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host "Pressione qualquer tecla para sair..." -ForegroundColor Gray
+Write-Host "========================================" -ForegroundColor Cyan
+$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+
