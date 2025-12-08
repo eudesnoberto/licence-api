@@ -329,8 +329,12 @@ def init_db() -> None:
 
 
 def _normalize_query(query: str) -> str:
-    """Normaliza query SQL: converte ? para %s se usar MySQL"""
+    """Normaliza query SQL: converte ? para %s se usar MySQL e ajusta funções SQLite"""
     if USE_MYSQL:
+        # Substituir funções SQLite por MySQL
+        query = query.replace("datetime('now')", "NOW()")
+        query = query.replace("CURRENT_TIMESTAMP", "NOW()")
+        
         # Contar quantos ? existem
         count = query.count('?')
         # Substituir todos os ? por %s
