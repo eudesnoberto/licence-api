@@ -36,7 +36,12 @@ app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1, x_
 # CORS: libera apenas os domínios do dashboard (produção e dev)
 CORS(
     app,
-    resources={r"/*": {"origins": ["https://fartgreen.fun", "https://www.fartgreen.fun", "http://localhost:5173"]}},
+    resources={r"/*": {
+        "origins": ["https://fartgreen.fun", "https://www.fartgreen.fun", "http://localhost:5173"],
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+        "allow_headers": ["Content-Type", "Authorization"],
+        "expose_headers": ["Content-Type"],
+    }},
 )
 
 
@@ -460,7 +465,16 @@ def create_device_license():
             # Atualiza existente
             # Se created_by for fornecido e usuário for admin, atualiza também
             created_by_update = data.get("created_by")
-            if created_by_update and user_role == "admin":
+            # Se não fornecido e for admin, manter o existente ou usar 'admin'
+            if not created_by_update and user_role == "admin":
+                # Se não fornecido, usar 'admin' para que admin veja todas
+                created_by_update = "admin"
+            # Se não fornecido e for usuário comum, usar o username atual
+            elif not created_by_update and user_role != "admin":
+                created_by_update = username
+            
+            # Sempre atualizar created_by se for admin (pode definir para qualquer usuário)
+            if user_role == "admin":
                 cur.execute(
                     """
                     UPDATE devices SET
@@ -506,6 +520,19 @@ def create_device_license():
         else:
             # Cria novo
             username = getattr(request, "admin_username", None)
+            user_role = getattr(request, "user_role", "admin")
+            
+            # Determinar created_by
+            created_by_value = None
+            if user_role == "admin":
+                # Admin pode especificar created_by, ou usar 'admin' por padrão
+                created_by_value = data.get("created_by")
+                if not created_by_value:
+                    created_by_value = "admin"  # Admin vê todas as licenças sem created_by
+            else:
+                # Usuário comum sempre cria com seu próprio username
+                created_by_value = username
+            
             cur.execute(
                 """
                 INSERT INTO devices (
@@ -526,7 +553,7 @@ def create_device_license():
                     end,
                     60,
                     "core",
-                    username,  # Salva quem criou
+                    created_by_value,  # Usa o valor determinado acima
                 ),
             )
         conn.commit()
@@ -912,6 +939,85 @@ def update_device_created_by():
     
     logger.info(f"created_by atualizado para Device ID {device_id}: {new_created_by}")
     return json_response({"success": True, "device_id": device_id, "created_by": new_created_by}, 200)
+
+
+@app.route("/admin/devices/<device_id>/deactivate", methods=["POST"])
+@require_admin
+def deactivate_device(device_id: str):
+    """Desativa ou reativa uma licença (alterna entre 'blocked' e 'active')."""
+    username = getattr(request, "admin_username", None)
+    user_role = getattr(request, "user_role", "admin")
+    data = request.get_json(silent=True) or {}
+    action = data.get("action", "toggle")  # "block", "activate", ou "toggle"
+    
+    if not username:
+        return json_response({"error": "Não autenticado."}, 401)
+    
+    with get_conn() as conn:
+        cur = conn.cursor()
+        
+        # Verificar se licença existe e obter status atual
+        cur.execute("SELECT id, status, created_by FROM devices WHERE device_id = ?", (device_id,))
+        row = cur.fetchone()
+        if not row:
+            return json_response({"error": "Licença não encontrada."}, 404)
+        
+        current_status = row[1] if len(row) > 1 else None
+        created_by = row[2] if len(row) > 2 else None
+        
+        # Verificar permissões (usuários comuns só podem desativar suas próprias licenças)
+        if user_role != "admin":
+            if created_by != username:
+                return json_response({"error": "Você não tem permissão para modificar esta licença."}, 403)
+        
+        # Determinar novo status
+        if action == "activate":
+            new_status = "active"
+        elif action == "block":
+            new_status = "blocked"
+        else:  # toggle
+            new_status = "active" if current_status == "blocked" else "blocked"
+        
+        # Atualizar status
+        cur.execute(
+            "UPDATE devices SET status = ?, updated_at = datetime('now') WHERE device_id = ?",
+            (new_status, device_id)
+        )
+        conn.commit()
+    
+    action_text = "reativada" if new_status == "active" else "desativada"
+    logger.info(f"Licença {action_text}: {device_id} por {username} (status: {new_status})")
+    return json_response({"success": True, "device_id": device_id, "status": new_status}, 200)
+
+
+@app.route("/admin/devices/<device_id>/delete", methods=["DELETE"])
+@require_admin
+def delete_device(device_id: str):
+    """Exclui uma licença permanentemente."""
+    username = getattr(request, "admin_username", None)
+    user_role = getattr(request, "user_role", "admin")
+    
+    if not username:
+        return json_response({"error": "Não autenticado."}, 401)
+    
+    # Apenas admins podem excluir licenças
+    if user_role != "admin":
+        return json_response({"error": "Apenas administradores podem excluir licenças."}, 403)
+    
+    with get_conn() as conn:
+        cur = conn.cursor()
+        
+        # Verificar se licença existe
+        cur.execute("SELECT id FROM devices WHERE device_id = ?", (device_id,))
+        if not cur.fetchone():
+            return json_response({"error": "Licença não encontrada."}, 404)
+        
+        # Excluir licença
+        cur.execute("DELETE FROM devices WHERE device_id = ?", (device_id,))
+        conn.commit()
+    
+    logger.info(f"Licença excluída: {device_id} por {username}")
+    return json_response({"success": True, "device_id": device_id, "message": "Licença excluída permanentemente."}, 200)
 
 
 @app.route("/user/profile", methods=["GET", "PUT"])

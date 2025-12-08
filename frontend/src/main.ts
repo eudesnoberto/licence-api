@@ -5,11 +5,51 @@ import './style.css'
 // ============================================================================
 // Array de servidores em ordem de prioridade
 // O sistema tentará cada servidor até encontrar um que funcione
-const API_SERVERS: string[] = [
-  'https://api.fartgreen.fun',                    // Servidor Principal
-  'https://licence-api-zsbg.onrender.com',       // Backup 1 (Render)
-  // Adicione mais servidores aqui se necessário
-]
+// 
+// CONFIGURAÇÃO VIA .env (RECOMENDADO):
+// - VITE_API_SERVER_PRIMARY: Servidor principal
+// - VITE_API_SERVER_BACKUP1: Servidor backup 1
+// - VITE_API_SERVER_BACKUP2: Servidor backup 2 (opcional)
+// - VITE_API_SERVERS: Lista completa separada por vírgula (alternativa)
+// ============================================================================
+
+// Carregar servidores do .env ou usar padrão
+function loadApiServers(): string[] {
+  const servers: string[] = []
+  
+  // Opção 1: Lista completa via VITE_API_SERVERS
+  const serversList = import.meta.env.VITE_API_SERVERS as string | undefined
+  if (serversList) {
+    const parsed = serversList.split(',').map(s => s.trim()).filter(s => s.length > 0)
+    if (parsed.length > 0) {
+      console.log('✅ Servidores carregados via VITE_API_SERVERS:', parsed)
+      return parsed
+    }
+  }
+  
+  // Opção 2: Servidores individuais
+  const primary = import.meta.env.VITE_API_SERVER_PRIMARY as string | undefined
+  const backup1 = import.meta.env.VITE_API_SERVER_BACKUP1 as string | undefined
+  const backup2 = import.meta.env.VITE_API_SERVER_BACKUP2 as string | undefined
+  
+  if (primary) servers.push(primary)
+  if (backup1) servers.push(backup1)
+  if (backup2) servers.push(backup2)
+  
+  // Se nenhum servidor foi configurado no .env, usar padrão
+  if (servers.length === 0) {
+    console.log('ℹ️  Usando servidores padrão (nenhum .env configurado)')
+    return [
+      'https://api.fartgreen.fun',                    // Servidor Principal
+      'https://licence-api-zsbg.onrender.com',       // Backup 1 (Render)
+    ]
+  }
+  
+  console.log('✅ Servidores carregados do .env:', servers)
+  return servers
+}
+
+const API_SERVERS: string[] = loadApiServers()
 
 // Servidor atual que está funcionando (cache)
 let currentWorkingServer: string | null = null
@@ -136,7 +176,13 @@ async function fetchWithFallback(
     localStorage.removeItem('apiWorkingServer')
   }
   
-  const errorMsg = `Todos os servidores falharam. Último erro: ${lastError?.message || 'Desconhecido'}`
+  // Mensagem de erro mais clara
+  let errorMsg = 'Não foi possível conectar aos servidores.'
+  if (corsError) {
+    errorMsg = `Todos os servidores falharam. Último erro: Erro de conexão com ${lastServerTried || 'servidor'} (CORS ou servidor offline)`
+  } else if (lastError) {
+    errorMsg = `Todos os servidores falharam. Último erro: ${lastError.message}`
+  }
   console.error('❌ Todos os servidores falharam:', {
     servidoresTentados: servers,
     ultimoServidor: lastServerTried,
@@ -152,11 +198,20 @@ if (savedServer && API_SERVERS.includes(savedServer)) {
   currentWorkingServer = savedServer
 }
 
-// Compatibilidade: se VITE_API_BASE_URL estiver definido, usar como fallback
+// Compatibilidade: se VITE_API_BASE_URL estiver definido, adicionar como fallback
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL as string | undefined
 if (API_BASE_URL && !API_SERVERS.includes(API_BASE_URL)) {
   API_SERVERS.push(API_BASE_URL)
+  console.log('ℹ️  Servidor adicional adicionado via VITE_API_BASE_URL:', API_BASE_URL)
 }
+
+// Log final dos servidores configurados (apenas em desenvolvimento)
+if (import.meta.env.DEV) {
+  console.log('📡 Servidores API configurados:', API_SERVERS)
+}
+
+// Log final dos servidores configurados
+console.log('📡 Servidores API configurados:', API_SERVERS)
 
 // Roteamento simples baseado em hash
 function getRoute(): string {
@@ -351,6 +406,77 @@ async function resetPassword(token: string, newPassword: string): Promise<void> 
   if (!res.ok) {
     const text = await res.text()
     throw new Error(text || 'Erro ao redefinir senha')
+  }
+}
+
+async function deactivateLicense(deviceId: string): Promise<void> {
+  if (!authToken) throw new Error('Não autenticado')
+  const res = await fetchWithFallback(`/admin/devices/${encodeURIComponent(deviceId)}/deactivate`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${authToken}`,
+    },
+    body: JSON.stringify({ action: 'block' }),
+  })
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(text || 'Erro ao desativar licença')
+  }
+}
+
+async function reactivateLicense(deviceId: string): Promise<void> {
+  if (!authToken) throw new Error('Não autenticado')
+  const res = await fetchWithFallback(`/admin/devices/${encodeURIComponent(deviceId)}/deactivate`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${authToken}`,
+    },
+    body: JSON.stringify({ action: 'activate' }),
+  })
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(text || 'Erro ao reativar licença')
+  }
+}
+
+async function deleteLicense(deviceId: string): Promise<void> {
+  if (!authToken) throw new Error('Não autenticado')
+  
+  try {
+    const res = await fetchWithFallback(`/admin/devices/${encodeURIComponent(deviceId)}/delete`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authToken}`,
+      },
+      timeout: 15000, // 15 segundos para exclusão
+    })
+    
+    if (!res.ok) {
+      let errorMessage = 'Erro ao excluir licença'
+      try {
+        const text = await res.text()
+        if (text) {
+          try {
+            const json = JSON.parse(text)
+            errorMessage = json.error || json.message || text
+          } catch {
+            errorMessage = text
+          }
+        }
+      } catch {
+        errorMessage = `Erro HTTP ${res.status}: ${res.statusText}`
+      }
+      throw new Error(errorMessage)
+    }
+  } catch (error: any) {
+    // Melhorar mensagem de erro para CORS ou servidor offline
+    if (error.message?.includes('CORS') || error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
+      throw new Error('Não foi possível conectar aos servidores. Verifique sua conexão ou tente novamente mais tarde.')
+    }
+    throw error
   }
 }
 
@@ -1196,6 +1322,7 @@ async function showDashboard() {
                     <th>IP</th>
                     <th>Host</th>
                     <th>Versão</th>
+                    <th>Ações</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1240,6 +1367,48 @@ async function showDashboard() {
                       <td>${d.last_seen_ip ?? '-'}</td>
                       <td>${d.last_hostname ?? '-'}</td>
                       <td>${d.last_version ?? '-'}</td>
+                      <td>
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                          ${d.status === 'active' ? `
+                            <button 
+                              class="action-btn action-btn-warning" 
+                              data-action="deactivate" 
+                              data-device-id="${d.device_id}"
+                              title="Desativar licença"
+                              style="padding: 0.5rem 1rem; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 0.875rem; font-weight: 600; transition: all 0.2s;"
+                              onmouseover="this.style.transform='scale(1.05)'"
+                              onmouseout="this.style.transform='scale(1)'"
+                            >
+                              Desativar
+                            </button>
+                          ` : d.status === 'blocked' ? `
+                            <button 
+                              class="action-btn action-btn-success" 
+                              data-action="activate" 
+                              data-device-id="${d.device_id}"
+                              title="Reativar licença"
+                              style="padding: 0.5rem 1rem; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 0.875rem; font-weight: 600; transition: all 0.2s;"
+                              onmouseover="this.style.transform='scale(1.05)'"
+                              onmouseout="this.style.transform='scale(1)'"
+                            >
+                              Reativar
+                            </button>
+                          ` : ''}
+                          ${userRole === 'admin' ? `
+                            <button 
+                              class="action-btn action-btn-danger" 
+                              data-action="delete" 
+                              data-device-id="${d.device_id}"
+                              title="Excluir licença permanentemente"
+                              style="padding: 0.5rem 1rem; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 0.875rem; font-weight: 600; transition: all 0.2s;"
+                              onmouseover="this.style.transform='scale(1.05)'"
+                              onmouseout="this.style.transform='scale(1)'"
+                            >
+                              Excluir
+                            </button>
+                          ` : ''}
+                        </div>
+                      </td>
                     </tr>
                   `,
                     )
@@ -1256,6 +1425,74 @@ async function showDashboard() {
   // Renderizar gráficos
   renderPieChart(stats.byType, 'chart-by-type', 'Licenças por Tipo')
   renderPieChart(stats.byStatus, 'chart-by-status', 'Licenças por Status')
+  
+  // Event listeners para ações de licenças
+  document.querySelectorAll('[data-action="deactivate"]').forEach((btn) => {
+    btn.addEventListener('click', async (e) => {
+      const deviceId = (e.target as HTMLElement).getAttribute('data-device-id')
+      if (!deviceId) return
+      
+      if (!confirm(`Tem certeza que deseja DESATIVAR a licença ${deviceId}?`)) {
+        return
+      }
+      
+      try {
+        await deactivateLicense(deviceId)
+        alert('Licença desativada com sucesso!')
+        await showDashboard()
+      } catch (err: any) {
+        alert(err?.message ?? 'Erro ao desativar licença')
+      }
+    })
+  })
+  
+  document.querySelectorAll('[data-action="activate"]').forEach((btn) => {
+    btn.addEventListener('click', async (e) => {
+      const deviceId = (e.target as HTMLElement).getAttribute('data-device-id')
+      if (!deviceId) return
+      
+      if (!confirm(`Tem certeza que deseja REATIVAR a licença ${deviceId}?`)) {
+        return
+      }
+      
+      try {
+        await reactivateLicense(deviceId)
+        alert('Licença reativada com sucesso!')
+        await showDashboard()
+      } catch (err: any) {
+        alert(err?.message ?? 'Erro ao reativar licença')
+      }
+    })
+  })
+  
+  document.querySelectorAll('[data-action="delete"]').forEach((btn) => {
+    btn.addEventListener('click', async (e) => {
+      const deviceId = (e.target as HTMLElement).getAttribute('data-device-id')
+      if (!deviceId) return
+      
+      if (!confirm(`⚠️ ATENÇÃO: Esta ação é IRREVERSÍVEL!\n\nTem certeza que deseja EXCLUIR PERMANENTEMENTE a licença ${deviceId}?`)) {
+        return
+      }
+      
+      // Confirmação dupla para exclusão
+      if (!confirm(`Confirmação final: Excluir a licença ${deviceId}?\n\nEsta ação não pode ser desfeita!`)) {
+        return
+      }
+      
+      try {
+        await deleteLicense(deviceId)
+        alert('Licença excluída permanentemente!')
+        await showDashboard()
+      } catch (err: any) {
+        // Melhorar mensagem de erro para o usuário
+        let errorMsg = err?.message ?? 'Erro ao excluir licença'
+        if (errorMsg.includes('CORS') || errorMsg.includes('servidor offline') || errorMsg.includes('conectar aos servidores')) {
+          errorMsg = 'Não foi possível conectar aos servidores. Verifique sua conexão com a internet e tente novamente.\n\nSe o problema persistir, o servidor pode estar temporariamente offline.'
+        }
+        alert(errorMsg)
+      }
+    })
+  })
   
   // Event listeners
   const logoutBtn = document.querySelector<HTMLButtonElement>('#logout-btn')
