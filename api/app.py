@@ -864,6 +864,35 @@ def user_devices_create():
     return json_response({"success": True, "device_id": device_id, "license_type": license_type}, 201)
 
 
+@app.route("/admin/devices/update-created-by", methods=["POST"])
+@require_admin
+def update_device_created_by():
+    """Endpoint temporário para atualizar o campo created_by de uma licença."""
+    data = request.get_json(silent=True) or {}
+    device_id = (data.get("device_id") or "").strip()
+    new_created_by = (data.get("created_by") or "").strip()
+    
+    if not device_id or not new_created_by:
+        return json_response({"error": "device_id e created_by são obrigatórios."}, 400)
+    
+    with get_conn() as conn:
+        cur = conn.cursor()
+        # Verificar se licença existe
+        cur.execute("SELECT id FROM devices WHERE device_id = ?", (device_id,))
+        if not cur.fetchone():
+            return json_response({"error": "Licença não encontrada."}, 404)
+        
+        # Atualizar created_by
+        cur.execute(
+            "UPDATE devices SET created_by = ?, updated_at = datetime('now') WHERE device_id = ?",
+            (new_created_by, device_id)
+        )
+        conn.commit()
+    
+    logger.info(f"created_by atualizado para Device ID {device_id}: {new_created_by}")
+    return json_response({"success": True, "device_id": device_id, "created_by": new_created_by}, 200)
+
+
 @app.route("/user/profile", methods=["GET"])
 @require_admin
 def get_user_profile():
