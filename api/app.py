@@ -914,36 +914,23 @@ def update_device_created_by():
     return json_response({"success": True, "device_id": device_id, "created_by": new_created_by}, 200)
 
 
-@app.route("/user/profile", methods=["GET"])
+@app.route("/user/profile", methods=["GET", "PUT"])
 @require_admin
-def get_user_profile():
-    """Obtém dados do usuário logado."""
+def user_profile():
+    """Obtém ou atualiza dados do usuário logado."""
     username = getattr(request, "admin_username", None)
     user_role = getattr(request, "user_role", "admin")
     
     if not username:
         return json_response({"error": "Não autenticado."}, 401)
     
-    with get_conn() as conn:
-        cur = conn.cursor()
-        # Verificar em users
-        cur.execute(
-            "SELECT id, username, email, role, created_at FROM users WHERE username = ? LIMIT 1",
-            (username,),
-        )
-        row = cur.fetchone()
-        if row:
-            return json_response({
-                "id": row["id"],
-                "username": row["username"],
-                "email": row["email"],
-                "role": row["role"],
-                "created_at": row["created_at"],
-            })
-        else:
-            # Se não está em users, é admin
+    if request.method == "GET":
+        # GET: Retornar perfil do usuário
+        with get_conn() as conn:
+            cur = conn.cursor()
+            # Verificar em users
             cur.execute(
-                "SELECT id, username, created_at FROM admin_users WHERE username = ? LIMIT 1",
+                "SELECT id, username, email, role, created_at FROM users WHERE username = ? LIMIT 1",
                 (username,),
             )
             row = cur.fetchone()
@@ -951,41 +938,48 @@ def get_user_profile():
                 return json_response({
                     "id": row["id"],
                     "username": row["username"],
-                    "email": None,
-                    "role": "admin",
+                    "email": row["email"],
+                    "role": row["role"],
                     "created_at": row["created_at"],
                 })
+            else:
+                # Se não está em users, é admin
+                cur.execute(
+                    "SELECT id, username, created_at FROM admin_users WHERE username = ? LIMIT 1",
+                    (username,),
+                )
+                row = cur.fetchone()
+                if row:
+                    return json_response({
+                        "id": row["id"],
+                        "username": row["username"],
+                        "email": None,
+                        "role": "admin",
+                        "created_at": row["created_at"],
+                    })
+        
+        return json_response({"error": "Usuário não encontrado."}, 404)
     
-    return json_response({"error": "Usuário não encontrado."}, 404)
-
-
-@app.route("/user/profile", methods=["GET", "PUT"])
-@require_admin
-def user_profile():
-    """Permite usuário atualizar seus próprios dados."""
-    username = getattr(request, "admin_username", None)
-    data = request.get_json(silent=True) or {}
-    
-    if not username:
-        return json_response({"error": "Não autenticado."}, 401)
-    
-    email = (data.get("email") or "").strip() or None
-    
-    with get_conn() as conn:
-        cur = conn.cursor()
-        # Verificar em users
-        cur.execute("SELECT id FROM users WHERE username = ? LIMIT 1", (username,))
-        row = cur.fetchone()
-        if row:
-            cur.execute(
-                "UPDATE users SET email = ?, updated_at = datetime('now') WHERE username = ?",
-                (email, username),
-            )
-            conn.commit()
-            logger.info(f"Perfil atualizado por {username}")
-            return json_response({"ok": True})
-        else:
-            return json_response({"error": "Apenas usuários comuns podem atualizar o perfil."}, 403)
+    else:
+        # PUT: Atualizar perfil
+        data = request.get_json(silent=True) or {}
+        email = (data.get("email") or "").strip() or None
+        
+        with get_conn() as conn:
+            cur = conn.cursor()
+            # Verificar em users
+            cur.execute("SELECT id FROM users WHERE username = ? LIMIT 1", (username,))
+            row = cur.fetchone()
+            if row:
+                cur.execute(
+                    "UPDATE users SET email = ?, updated_at = datetime('now') WHERE username = ?",
+                    (email, username),
+                )
+                conn.commit()
+                logger.info(f"Perfil atualizado por {username}")
+                return json_response({"ok": True})
+            else:
+                return json_response({"error": "Apenas usuários comuns podem atualizar o perfil."}, 403)
 
 
 @app.route("/auth/forgot-password", methods=["POST"])
