@@ -29,8 +29,8 @@ VITE_API_SERVER_PRIMARY=https://api.fartgreen.fun
 # Servidor Backup 1 (Render)
 VITE_API_SERVER_BACKUP1=https://licence-api-zsbg.onrender.com
 
-# Servidor Backup 2 (Opcional - descomente se tiver)
-# VITE_API_SERVER_BACKUP2=https://seu-servidor-backup2.com
+# Servidor Backup 2 (Koyeb)
+VITE_API_SERVER_BACKUP2=https://shiny-jemmie-easyplayrockola-6d2e5ef0.koyeb.app
 ```
 
 ### **Passo 2: Reiniciar o servidor de desenvolvimento**

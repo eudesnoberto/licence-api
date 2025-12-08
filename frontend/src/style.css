@@ -408,6 +408,166 @@ td {
   transform: translateY(-2px);
 }
 
+/* Formulários Responsivos */
+.responsive-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  align-items: end;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group-submit {
+  grid-column: 1 / -1;
+}
+
+@media (min-width: 1024px) {
+  .responsive-form-grid {
+    grid-template-columns: repeat(4, 1fr) auto;
+  }
+  
+  .form-group-submit {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 1023px) {
+  .responsive-form-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .responsive-form-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .form-group-submit {
+    grid-column: 1;
+  }
+}
+
+/* Formulário de criar licença responsivo */
+#quick-license-form {
+  display: grid;
+  gap: 1rem;
+}
+
+#quick-license-form > div[style*="grid"] {
+  display: grid !important;
+  gap: 1rem !important;
+}
+
+@media (max-width: 768px) {
+  #quick-license-form > div[style*="grid-template-columns: 150px 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+  
+  #quick-license-form > div[style*="grid-template-columns: 1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Carrossel de Planos */
+.pricing-carousel-wrapper {
+  position: relative;
+  margin-top: 1.5rem;
+  padding: 0 3rem;
+}
+
+.pricing-carousel-container {
+  overflow: hidden;
+  position: relative;
+  border-radius: 20px;
+}
+
+.pricing-carousel-track {
+  display: flex;
+  gap: 2rem;
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+}
+
+.pricing-carousel-track .pricing-card {
+  flex: 0 0 calc(25% - 1.5rem);
+  min-width: 280px;
+}
+
+.carousel-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border: 2px solid #e5e7eb;
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 10;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  color: #667eea;
+}
+
+.carousel-btn:hover:not(:disabled) {
+  background: white;
+  border-color: #667eea;
+  transform: translateY(-50%) scale(1.1);
+  box-shadow: 0 6px 30px rgba(102, 126, 234, 0.3);
+}
+
+.carousel-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.carousel-btn-prev {
+  left: 0;
+}
+
+.carousel-btn-next {
+  right: 0;
+}
+
+.carousel-dots {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 2rem;
+  flex-wrap: wrap;
+}
+
+.carousel-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: none;
+  background: #d1d5db;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 0;
+}
+
+.carousel-dot:hover {
+  background: #9ca3af;
+  transform: scale(1.2);
+}
+
+.carousel-dot.active {
+  background: var(--primary-gradient);
+  width: 32px;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+}
+
 .pricing-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -425,6 +585,13 @@ td {
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+@media (max-width: 768px) {
+  .pricing-card {
+    padding: 1.5rem;
+  }
 }
 
 .pricing-card::before {
@@ -910,6 +1077,22 @@ td {
 }
 
 /* Responsive */
+@media (max-width: 1440px) {
+  .pricing-carousel-track .pricing-card {
+    flex: 0 0 calc(33.333% - 1.5rem);
+  }
+}
+
+@media (max-width: 1024px) {
+  .pricing-carousel-track .pricing-card {
+    flex: 0 0 calc(50% - 1rem);
+  }
+  
+  .pricing-carousel-wrapper {
+    padding: 0 2.5rem;
+  }
+}
+
 @media (max-width: 768px) {
   .landing-hero-title {
     font-size: 2.5rem;
@@ -927,8 +1110,144 @@ td {
     grid-template-columns: 1fr;
   }
   
+  .pricing-carousel-track .pricing-card {
+    flex: 0 0 100%;
+    min-width: 100%;
+  }
+  
+  .pricing-carousel-wrapper {
+    padding: 0 1rem;
+  }
+  
+  .carousel-btn {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .carousel-btn-prev {
+    left: -0.5rem;
+  }
+  
+  .carousel-btn-next {
+    right: -0.5rem;
+  }
+  
   .app-content {
     padding: 2rem 1.5rem;
+  }
+  
+  .app-header {
+    padding: 1.5rem 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  
+  .app-header h1 {
+    font-size: 1.75rem;
+  }
+  
+  .app-header > div {
+    flex-wrap: wrap;
+  }
+  
+  .app-header .logout-btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+  }
+  
+  /* Formulários responsivos */
+  .quick-form-card form {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+  
+  .quick-form-card {
+    padding: 1.5rem;
+  }
+  
+  section {
+    margin-top: 2.5rem;
+  }
+  
+  section h2 {
+    font-size: 1.5rem;
+  }
+  
+  /* Estatísticas responsivas */
+  .app-content > section:first-of-type > div[style*="grid"] {
+    grid-template-columns: 1fr !important;
+  }
+  
+  /* Tabela responsiva */
+  .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  table {
+    min-width: 800px;
+    font-size: 0.8rem;
+  }
+  
+  th, td {
+    padding: 0.75rem 0.5rem;
+  }
+}
+
+@media (max-width: 640px) {
+  #app {
+    padding: 1rem;
+  }
+  
+  .app-content {
+    padding: 1.5rem 1rem;
+  }
+  
+  .app-header {
+    padding: 1.25rem 1.5rem;
+  }
+  
+  .app-header h1 {
+    font-size: 1.5rem;
+  }
+  
+  .landing-hero {
+    padding: 4rem 0;
+  }
+  
+  .landing-hero-title {
+    font-size: 2rem;
+  }
+  
+  .landing-hero-subtitle {
+    font-size: 1.125rem;
+  }
+  
+  .landing-features {
+    padding: 3rem 0;
+  }
+  
+  .landing-features-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  
+  .pricing-carousel-wrapper {
+    padding: 0 0.5rem;
+  }
+  
+  .carousel-btn {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .carousel-btn svg {
+    width: 18px;
+    height: 18px;
+  }
+  
+  input, select {
+    font-size: 16px; /* Evita zoom no iOS */
   }
 }
 

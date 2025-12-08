@@ -40,8 +40,9 @@ function loadApiServers(): string[] {
   if (servers.length === 0) {
     console.log('ℹ️  Usando servidores padrão (nenhum .env configurado)')
     return [
-      'https://api.fartgreen.fun',                    // Servidor Principal
-      'https://licence-api-zsbg.onrender.com',       // Backup 1 (Render)
+      'https://api.fartgreen.fun',                                    // Servidor Principal
+      'https://licence-api-zsbg.onrender.com',                         // Backup 1 (Render)
+      'https://shiny-jemmie-easyplayrockola-6d2e5ef0.koyeb.app',      // Backup 2 (Koyeb)
     ]
   }
   
@@ -1135,97 +1136,112 @@ async function showDashboard() {
         <!-- Planos -->
         <section>
           <h2>Planos de Licença</h2>
-          <div class="pricing-cards">
-            <div class="pricing-card" data-type="mensal">
-              <div class="pricing-header">
-                <h3>Mensal</h3>
-                <div class="pricing-price-original">De: R$ 20,95</div>
-                <div class="pricing-price">R$ 19,90<span>/mês</span></div>
-                <div class="pricing-badge">5% OFF</div>
+          <div class="pricing-carousel-wrapper">
+            <button class="carousel-btn carousel-btn-prev" aria-label="Plano anterior">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M15 18l-6-6 6-6"/>
+              </svg>
+            </button>
+            <div class="pricing-carousel-container">
+              <div class="pricing-carousel-track">
+                <div class="pricing-card" data-type="mensal">
+                  <div class="pricing-header">
+                    <h3>Mensal</h3>
+                    <div class="pricing-price-original">De: R$ 20,95</div>
+                    <div class="pricing-price">R$ 19,90<span>/mês</span></div>
+                    <div class="pricing-badge">5% OFF</div>
+                  </div>
+                  <ul class="pricing-features">
+                    <li>Licença válida por 1 mês</li>
+                    <li>Suporte completo</li>
+                    <li>Atualizações incluídas</li>
+                  </ul>
+                  <button class="pricing-btn" onclick="selectPlan('mensal')">Selecionar</button>
+                </div>
+                
+                <div class="pricing-card" data-type="trimestral">
+                  <div class="pricing-header">
+                    <h3>Trimestral</h3>
+                    <div class="pricing-price-original">De: R$ 59,70</div>
+                    <div class="pricing-price">R$ 49,90<span>/3 meses</span></div>
+                    <div class="pricing-badge">16% OFF</div>
+                  </div>
+                  <ul class="pricing-features">
+                    <li>Licença válida por 3 meses</li>
+                    <li>Suporte completo</li>
+                    <li>Atualizações incluídas</li>
+                  </ul>
+                  <button class="pricing-btn" onclick="selectPlan('trimestral')">Selecionar</button>
+                </div>
+                
+                <div class="pricing-card" data-type="semestral">
+                  <div class="pricing-header">
+                    <h3>Semestral</h3>
+                    <div class="pricing-price-original">De: R$ 119,40</div>
+                    <div class="pricing-price">R$ 94,90<span>/6 meses</span></div>
+                    <div class="pricing-badge">21% OFF</div>
+                  </div>
+                  <ul class="pricing-features">
+                    <li>Licença válida por 6 meses</li>
+                    <li>Suporte completo</li>
+                    <li>Atualizações incluídas</li>
+                  </ul>
+                  <button class="pricing-btn" onclick="selectPlan('semestral')">Selecionar</button>
+                </div>
+                
+                <div class="pricing-card featured" data-type="anual">
+                  <div class="pricing-header">
+                    <h3>Anual</h3>
+                    <div class="pricing-price-original">De: R$ 238,80</div>
+                    <div class="pricing-price">R$ 180,00<span>/ano</span></div>
+                    <div class="pricing-badge">Mais Popular - 25% OFF</div>
+                  </div>
+                  <ul class="pricing-features">
+                    <li>Licença válida por 1 ano</li>
+                    <li>Suporte completo</li>
+                    <li>Atualizações incluídas</li>
+                  </ul>
+                  <button class="pricing-btn" onclick="selectPlan('anual')">Selecionar</button>
+                </div>
+                
+                <div class="pricing-card" data-type="trianual">
+                  <div class="pricing-header">
+                    <h3>Trienal</h3>
+                    <div class="pricing-price-original">De: R$ 716,40</div>
+                    <div class="pricing-price">R$ 499,00<span>/3 anos</span></div>
+                    <div class="pricing-badge">Melhor Valor - 30% OFF</div>
+                  </div>
+                  <ul class="pricing-features">
+                    <li>Licença válida por 3 anos</li>
+                    <li>Suporte completo</li>
+                    <li>Atualizações incluídas</li>
+                  </ul>
+                  <button class="pricing-btn" onclick="selectPlan('trianual')">Selecionar</button>
+                </div>
+                
+                <div class="pricing-card" data-type="vitalicia" style="border-color: #f59e0b;">
+                  <div class="pricing-header">
+                    <h3>Vitalício</h3>
+                    <div class="pricing-price-original">De: R$ 1.500,00</div>
+                    <div class="pricing-price">R$ 999,00<span> (único)</span></div>
+                    <div class="pricing-badge" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">33% OFF</div>
+                  </div>
+                  <ul class="pricing-features">
+                    <li>Licença válida para sempre</li>
+                    <li>Suporte vitalício</li>
+                    <li>Todas as atualizações</li>
+                    <li>Sem renovação</li>
+                  </ul>
+                  <button class="pricing-btn" onclick="selectPlan('vitalicia')">Selecionar</button>
+                </div>
               </div>
-              <ul class="pricing-features">
-                <li>Licença válida por 1 mês</li>
-                <li>Suporte completo</li>
-                <li>Atualizações incluídas</li>
-              </ul>
-              <button class="pricing-btn" onclick="selectPlan('mensal')">Selecionar</button>
             </div>
-            
-            <div class="pricing-card" data-type="trimestral">
-              <div class="pricing-header">
-                <h3>Trimestral</h3>
-                <div class="pricing-price-original">De: R$ 59,70</div>
-                <div class="pricing-price">R$ 49,90<span>/3 meses</span></div>
-                <div class="pricing-badge">16% OFF</div>
-              </div>
-              <ul class="pricing-features">
-                <li>Licença válida por 3 meses</li>
-                <li>Suporte completo</li>
-                <li>Atualizações incluídas</li>
-              </ul>
-              <button class="pricing-btn" onclick="selectPlan('trimestral')">Selecionar</button>
-            </div>
-            
-            <div class="pricing-card" data-type="semestral">
-              <div class="pricing-header">
-                <h3>Semestral</h3>
-                <div class="pricing-price-original">De: R$ 119,40</div>
-                <div class="pricing-price">R$ 94,90<span>/6 meses</span></div>
-                <div class="pricing-badge">21% OFF</div>
-              </div>
-              <ul class="pricing-features">
-                <li>Licença válida por 6 meses</li>
-                <li>Suporte completo</li>
-                <li>Atualizações incluídas</li>
-              </ul>
-              <button class="pricing-btn" onclick="selectPlan('semestral')">Selecionar</button>
-            </div>
-            
-            <div class="pricing-card featured" data-type="anual">
-              <div class="pricing-header">
-                <h3>Anual</h3>
-                <div class="pricing-price-original">De: R$ 238,80</div>
-                <div class="pricing-price">R$ 180,00<span>/ano</span></div>
-                <div class="pricing-badge">Mais Popular - 25% OFF</div>
-              </div>
-              <ul class="pricing-features">
-                <li>Licença válida por 1 ano</li>
-                <li>Suporte completo</li>
-                <li>Atualizações incluídas</li>
-              </ul>
-              <button class="pricing-btn" onclick="selectPlan('anual')">Selecionar</button>
-            </div>
-            
-            <div class="pricing-card" data-type="trianual">
-              <div class="pricing-header">
-                <h3>Trienal</h3>
-                <div class="pricing-price-original">De: R$ 716,40</div>
-                <div class="pricing-price">R$ 499,00<span>/3 anos</span></div>
-                <div class="pricing-badge">Melhor Valor - 30% OFF</div>
-              </div>
-              <ul class="pricing-features">
-                <li>Licença válida por 3 anos</li>
-                <li>Suporte completo</li>
-                <li>Atualizações incluídas</li>
-              </ul>
-              <button class="pricing-btn" onclick="selectPlan('trianual')">Selecionar</button>
-            </div>
-            
-            <div class="pricing-card" data-type="vitalicia" style="border-color: #f59e0b;">
-              <div class="pricing-header">
-                <h3>Vitalício</h3>
-                <div class="pricing-price-original">De: R$ 1.500,00</div>
-                <div class="pricing-price">R$ 999,00<span> (único)</span></div>
-                <div class="pricing-badge" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">33% OFF</div>
-              </div>
-              <ul class="pricing-features">
-                <li>Licença válida para sempre</li>
-                <li>Suporte vitalício</li>
-                <li>Todas as atualizações</li>
-                <li>Sem renovação</li>
-              </ul>
-              <button class="pricing-btn" onclick="selectPlan('vitalicia')">Selecionar</button>
-            </div>
+            <button class="carousel-btn carousel-btn-next" aria-label="Próximo plano">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 18l6-6-6-6"/>
+              </svg>
+            </button>
+            <div class="carousel-dots"></div>
           </div>
         </section>
         ` : ''}
@@ -1236,28 +1252,28 @@ async function showDashboard() {
           <h2>Gerenciar Usuários/Revendedores</h2>
           <div class="quick-form-card" style="margin-bottom: 2rem;">
             <h3 style="margin: 0 0 1rem; font-size: 1.1rem;">Criar Novo Usuário</h3>
-            <form id="create-user-form" style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr auto; gap: 1rem; align-items: end;">
-              <div>
+            <form id="create-user-form" class="responsive-form-grid">
+              <div class="form-group">
                 <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Usuário *</label>
                 <input type="text" id="new-username" required placeholder="nome_usuario" />
               </div>
-              <div>
+              <div class="form-group">
                 <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Senha *</label>
                 <input type="password" id="new-password" required placeholder="Senha segura" />
               </div>
-              <div>
+              <div class="form-group">
                 <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">E-mail</label>
                 <input type="email" id="new-email" placeholder="email@exemplo.com" />
               </div>
-              <div>
+              <div class="form-group">
                 <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Função *</label>
                 <select id="new-role" required style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 2px solid #e5e7eb;">
                   <option value="user">Usuário Comum</option>
                   <option value="admin">Administrador</option>
                 </select>
               </div>
-              <div>
-                <button type="submit" style="padding: 0.75rem 1.5rem;">Criar Usuário</button>
+              <div class="form-group form-group-submit">
+                <button type="submit" style="padding: 0.75rem 1.5rem; width: 100%;">Criar Usuário</button>
               </div>
             </form>
           </div>
@@ -1700,6 +1716,147 @@ async function showDashboard() {
       document.getElementById('quick-device-id')?.focus()
     }
   }
+  
+  // Inicializar carrossel de planos
+  if (userRole === 'admin') {
+    initPricingCarousel()
+  }
+}
+
+// Função para inicializar o carrossel de planos
+function initPricingCarousel() {
+  const track = document.querySelector<HTMLDivElement>('.pricing-carousel-track')
+  const prevBtn = document.querySelector<HTMLButtonElement>('.carousel-btn-prev')
+  const nextBtn = document.querySelector<HTMLButtonElement>('.carousel-btn-next')
+  const dotsContainer = document.querySelector<HTMLDivElement>('.carousel-dots')
+  
+  if (!track || !prevBtn || !nextBtn) return
+  
+  const cards = track.querySelectorAll<HTMLDivElement>('.pricing-card')
+  const totalCards = cards.length
+  let currentIndex = 0
+  
+  // Calcular quantos cards mostrar por vez baseado na largura da tela
+  function getCardsPerView(): number {
+    const width = window.innerWidth
+    if (width < 640) return 1      // Mobile
+    if (width < 1024) return 2      // Tablet
+    if (width < 1440) return 3      // Desktop pequeno
+    return 4                         // Desktop grande
+  }
+  
+  // Criar dots indicadores
+  function createDots() {
+    if (!dotsContainer) return
+    dotsContainer.innerHTML = ''
+    const cardsPerView = getCardsPerView()
+    const totalDots = Math.ceil(totalCards / cardsPerView)
+    
+    for (let i = 0; i < totalDots; i++) {
+      const dot = document.createElement('button')
+      dot.className = 'carousel-dot'
+      dot.setAttribute('aria-label', `Ir para slide ${i + 1}`)
+      if (i === 0) dot.classList.add('active')
+      dot.addEventListener('click', () => goToSlide(i))
+      dotsContainer.appendChild(dot)
+    }
+  }
+  
+  // Atualizar posição do carrossel
+  function updateCarousel() {
+    if (!track || !prevBtn || !nextBtn) return
+    
+    const cardsPerView = getCardsPerView()
+    const cardWidth = track.offsetWidth / cardsPerView
+    const maxIndex = Math.max(0, Math.ceil(totalCards / cardsPerView) - 1)
+    
+    // Limitar índice
+    currentIndex = Math.max(0, Math.min(currentIndex, maxIndex))
+    
+    // Calcular offset suave
+    const offset = -currentIndex * cardWidth * cardsPerView
+    track.style.transform = `translateX(${offset}px)`
+    
+    // Atualizar botões
+    prevBtn.disabled = currentIndex === 0
+    nextBtn.disabled = currentIndex >= maxIndex
+    
+    // Atualizar dots
+    const dots = dotsContainer?.querySelectorAll('.carousel-dot')
+    dots?.forEach((dot, index) => {
+      dot.classList.toggle('active', index === currentIndex)
+    })
+  }
+  
+  // Ir para slide específico
+  function goToSlide(index: number) {
+    currentIndex = index
+    updateCarousel()
+  }
+  
+  // Próximo slide
+  function nextSlide() {
+    const cardsPerView = getCardsPerView()
+    const maxIndex = Math.max(0, Math.ceil(totalCards / cardsPerView) - 1)
+    if (currentIndex < maxIndex) {
+      currentIndex++
+      updateCarousel()
+    }
+  }
+  
+  // Slide anterior
+  function prevSlide() {
+    if (currentIndex > 0) {
+      currentIndex--
+      updateCarousel()
+    }
+  }
+  
+  // Event listeners
+  prevBtn.addEventListener('click', prevSlide)
+  nextBtn.addEventListener('click', nextSlide)
+  
+  // Touch/swipe support
+  let touchStartX = 0
+  let touchEndX = 0
+  
+  if (track) {
+    track.addEventListener('touchstart', (e) => {
+      touchStartX = e.touches[0].clientX
+    }, { passive: true })
+    
+    track.addEventListener('touchend', (e) => {
+      touchEndX = e.changedTouches[0].clientX
+      handleSwipe()
+    }, { passive: true })
+  }
+  
+  function handleSwipe() {
+    const swipeThreshold = 50
+    const diff = touchStartX - touchEndX
+    
+    if (Math.abs(diff) > swipeThreshold) {
+      if (diff > 0) {
+        nextSlide()
+      } else {
+        prevSlide()
+      }
+    }
+  }
+  
+  // Inicializar
+  createDots()
+  updateCarousel()
+  
+  // Recalcular em resize
+  let resizeTimeout: number
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimeout)
+    resizeTimeout = window.setTimeout(() => {
+      createDots()
+      updateCarousel()
+    }, 250)
+  })
 }
 
 // Router principal
