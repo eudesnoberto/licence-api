@@ -193,8 +193,17 @@ def detect_clone_usage(device_id: str, current_ip: str, current_hostname: str) -
         unique_hostnames = set()
         
         for row in recent_accesses:
-            ip = row[0] if row[0] else ""
-            hostname = row[1] if row[1] else ""
+            # MySQL retorna dict, SQLite retorna Row
+            if USE_MYSQL and isinstance(row, dict):
+                ip = row.get('ip', '') or ""
+                hostname = row.get('hostname', '') or ""
+            elif hasattr(row, '__getitem__'):
+                ip = row[0] if len(row) > 0 and row[0] else ""
+                hostname = row[1] if len(row) > 1 and row[1] else ""
+            else:
+                ip = ""
+                hostname = ""
+            
             if ip:
                 unique_ips.add(ip)
             if hostname:
@@ -212,9 +221,17 @@ def detect_clone_usage(device_id: str, current_ip: str, current_hostname: str) -
         cur.execute("SELECT last_seen_ip, last_hostname FROM devices WHERE device_id = ?", (device_id,))
         last_seen = cur.fetchone()
         
-        if last_seen and last_seen[0]:
-            last_ip = last_seen[0]
-            last_hostname = last_seen[1] if last_seen[1] else ""
+        if last_seen:
+            # MySQL retorna dict, SQLite retorna Row
+            if USE_MYSQL and isinstance(last_seen, dict):
+                last_ip = last_seen.get('last_seen_ip', '') or ""
+                last_hostname = last_seen.get('last_hostname', '') or ""
+            elif hasattr(last_seen, '__getitem__'):
+                last_ip = last_seen[0] if len(last_seen) > 0 and last_seen[0] else ""
+                last_hostname = last_seen[1] if len(last_seen) > 1 and last_seen[1] else ""
+            else:
+                last_ip = ""
+                last_hostname = ""
             
             # Se IP mudou E hostname mudou E há acessos recentes, suspeito
             if (current_ip != last_ip and 
