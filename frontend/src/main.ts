@@ -1,6 +1,162 @@
 import './style.css'
 
+// ============================================================================
+// CONFIGURAÇÃO DE SERVIDORES COM REDUNDÂNCIA
+// ============================================================================
+// Array de servidores em ordem de prioridade
+// O sistema tentará cada servidor até encontrar um que funcione
+const API_SERVERS: string[] = [
+  'https://api.fartgreen.fun',                    // Servidor Principal
+  'https://licence-api-zsbg.onrender.com',       // Backup 1 (Render)
+  // Adicione mais servidores aqui se necessário
+]
+
+// Servidor atual que está funcionando (cache)
+let currentWorkingServer: string | null = null
+
+// ============================================================================
+// FUNÇÃO DE FALLBACK PARA MÚLTIPLOS SERVIDORES
+// ============================================================================
+interface FetchOptions extends RequestInit {
+  timeout?: number
+}
+
+async function fetchWithFallback(
+  endpoint: string,
+  options: FetchOptions = {}
+): Promise<Response> {
+  // Se temos um servidor que funcionou antes, tentar ele primeiro
+  // Mas se falhar, tentar todos os outros
+  let servers: string[]
+  if (currentWorkingServer && API_SERVERS.includes(currentWorkingServer)) {
+    // Tentar servidor que funcionou antes primeiro
+    servers = [currentWorkingServer, ...API_SERVERS.filter(s => s !== currentWorkingServer)]
+  } else {
+    // Tentar todos em ordem
+    servers = API_SERVERS
+  }
+  
+  const timeout = options.timeout || 10000 // 10 segundos padrão
+  const { timeout: _, ...fetchOptions } = options
+  
+  let lastError: Error | null = null
+  let lastServerTried: string | null = null
+  let corsError = false
+  
+  for (let i = 0; i < servers.length; i++) {
+    const server = servers[i]
+    const url = `${server}${endpoint}`
+    
+    // Criar AbortController para timeout
+    const controller = new AbortController()
+    let timeoutId: number | null = window.setTimeout(() => controller.abort(), timeout)
+    
+    try {
+      // Tentar fetch sem mode cors primeiro (pode funcionar em alguns casos)
+      let response: Response
+      try {
+        response = await fetch(url, {
+          ...fetchOptions,
+          signal: controller.signal,
+          mode: 'cors',
+          credentials: 'omit',
+        })
+      } catch (corsError: any) {
+        // Se falhar com CORS, tentar sem especificar mode
+        if (corsError.message && corsError.message.includes('Failed to fetch')) {
+          console.warn(`⚠️  CORS error com ${server}, tentando sem mode...`)
+          response = await fetch(url, {
+            ...fetchOptions,
+            signal: controller.signal,
+          })
+        } else {
+          throw corsError
+        }
+      }
+      
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+        timeoutId = null
+      }
+      
+      // Se a resposta foi bem-sucedida, salvar servidor e retornar
+      if (response.ok || response.status < 500) {
+        currentWorkingServer = server
+        localStorage.setItem('apiWorkingServer', server)
+        return response
+      }
+      
+      // Se erro 4xx (não autorizado, etc), não tentar outros servidores
+      if (response.status >= 400 && response.status < 500) {
+        return response
+      }
+      
+      // Erro 5xx, tentar próximo servidor
+      lastError = new Error(`Servidor ${server} retornou erro ${response.status}`)
+    } catch (error: any) {
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+        timeoutId = null
+      }
+      
+      // Erro de rede ou timeout
+      let errorMessage = ''
+      if (error.name === 'AbortError') {
+        errorMessage = `Timeout ao conectar com ${server}`
+      } else if (error.message && (error.message.includes('Failed to fetch') || error.message.includes('CORS'))) {
+        errorMessage = `Erro de conexão com ${server} (CORS ou servidor offline)`
+        corsError = true
+        // Se for erro de CORS, limpar cache deste servidor
+        if (currentWorkingServer === server) {
+          currentWorkingServer = null
+          localStorage.removeItem('apiWorkingServer')
+        }
+      } else {
+        errorMessage = `Erro ao conectar com ${server}: ${error.message || 'Erro desconhecido'}`
+      }
+      
+      lastError = new Error(errorMessage)
+      lastServerTried = server
+      
+      // Log para debug (apenas em console)
+      console.warn(`❌ Servidor ${server} falhou:`, errorMessage)
+      if (i < servers.length - 1) {
+        console.log(`🔄 Tentando próximo servidor... (${i + 2}/${servers.length})`)
+      }
+      
+      // Continuar para próximo servidor
+      continue
+    }
+  }
+  
+  // Se chegou aqui, nenhum servidor funcionou
+  // Limpar cache do servidor que estava funcionando
+  if (currentWorkingServer) {
+    currentWorkingServer = null
+    localStorage.removeItem('apiWorkingServer')
+  }
+  
+  const errorMsg = `Todos os servidores falharam. Último erro: ${lastError?.message || 'Desconhecido'}`
+  console.error('❌ Todos os servidores falharam:', {
+    servidoresTentados: servers,
+    ultimoServidor: lastServerTried,
+    erro: lastError?.message
+  })
+  
+  throw new Error(errorMsg)
+}
+
+// Carregar servidor que funcionou anteriormente
+const savedServer = localStorage.getItem('apiWorkingServer')
+if (savedServer && API_SERVERS.includes(savedServer)) {
+  currentWorkingServer = savedServer
+}
+
+// Compatibilidade: se VITE_API_BASE_URL estiver definido, usar como fallback
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL as string | undefined
+if (API_BASE_URL && !API_SERVERS.includes(API_BASE_URL)) {
+  API_SERVERS.push(API_BASE_URL)
+}
 
 // Roteamento simples baseado em hash
 function getRoute(): string {
@@ -28,6 +184,7 @@ type Device = {
   last_seen_ip: string | null
   last_hostname: string | null
   last_version: string | null
+  created_by?: string | null
 }
 
 type LoginResponse = {
@@ -48,41 +205,55 @@ let authToken: string | null = null
 let userRole: string = 'admin' // Padrão admin para compatibilidade
 
 async function fetchHealth(): Promise<string> {
-  if (!API_BASE_URL) return 'VITE_API_BASE_URL não configurada.'
-  const res = await fetch(`${API_BASE_URL}/health`)
-  const data = await res.json()
-  return `API: ${data.status} (HTTP ${res.status})`
+  try {
+    const res = await fetchWithFallback('/health', { timeout: 5000 })
+    const data = await res.json()
+    const serverName = currentWorkingServer 
+      ? new URL(currentWorkingServer).hostname 
+      : 'desconhecido'
+    return `API: ${data.status} (HTTP ${res.status}) - Servidor: ${serverName}`
+  } catch (error: any) {
+    return `Erro: ${error.message || 'Não foi possível conectar aos servidores'}`
+  }
 }
 
 async function fetchDevices(): Promise<Device[]> {
-  if (!API_BASE_URL) return []
-  const res = await fetch(`${API_BASE_URL}/admin/devices`, {
-    headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
-  })
-  if (!res.ok) return []
-  const data = await res.json()
-  return data.items ?? []
+  try {
+    const res = await fetchWithFallback('/admin/devices', {
+      headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
+    })
+    if (!res.ok) return []
+    const data = await res.json()
+    return data.items ?? []
+  } catch (error) {
+    console.error('Erro ao buscar dispositivos:', error)
+    return []
+  }
 }
 
 async function fetchUsers(): Promise<User[]> {
-  if (!API_BASE_URL) return []
-  const res = await fetch(`${API_BASE_URL}/admin/users`, {
-    headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
-  })
-  if (!res.ok) return []
-  const data = await res.json()
-  return data.items ?? []
+  try {
+    const res = await fetchWithFallback('/admin/users', {
+      headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
+    })
+    if (!res.ok) return []
+    const data = await res.json()
+    return data.items ?? []
+  } catch (error) {
+    console.error('Erro ao buscar usuários:', error)
+    return []
+  }
 }
 
-async function createUser(username: string, password: string, email: string): Promise<void> {
-  if (!API_BASE_URL || !authToken) throw new Error('Não autenticado')
-  const res = await fetch(`${API_BASE_URL}/admin/users/create`, {
+async function createUser(username: string, password: string, email: string, role: string = 'user'): Promise<void> {
+  if (!authToken) throw new Error('Não autenticado')
+  const res = await fetchWithFallback('/admin/users/create', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${authToken}`,
     },
-    body: JSON.stringify({ username, password, email }),
+    body: JSON.stringify({ username, password, email, role }),
   })
   if (!res.ok) {
     const text = await res.text()
@@ -91,8 +262,7 @@ async function createUser(username: string, password: string, email: string): Pr
 }
 
 async function login(username: string, password: string): Promise<LoginResponse> {
-  if (!API_BASE_URL) throw new Error('API não configurada')
-  const res = await fetch(`${API_BASE_URL}/admin/login`, {
+  const res = await fetchWithFallback('/admin/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, password }),
@@ -105,8 +275,8 @@ async function login(username: string, password: string): Promise<LoginResponse>
 }
 
 async function changePassword(oldPassword: string, newPassword: string): Promise<void> {
-  if (!API_BASE_URL || !authToken) throw new Error('Não autenticado')
-  const res = await fetch(`${API_BASE_URL}/admin/change-password`, {
+  if (!authToken) throw new Error('Não autenticado')
+  const res = await fetchWithFallback('/admin/change-password', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -117,6 +287,70 @@ async function changePassword(oldPassword: string, newPassword: string): Promise
   if (!res.ok) {
     const text = await res.text()
     throw new Error(text || 'Erro ao trocar senha')
+  }
+}
+
+async function getUserProfile(): Promise<{ username: string; email: string | null; role: string; created_at: string }> {
+  if (!authToken) throw new Error('Não autenticado')
+  try {
+    const res = await fetchWithFallback('/auth/profile', {
+      headers: {
+        Authorization: `Bearer ${authToken}`,
+      },
+      timeout: 15000, // 15 segundos para perfil
+    })
+    if (!res.ok) {
+      const text = await res.text()
+      throw new Error(text || 'Erro ao buscar perfil')
+    }
+    return res.json()
+  } catch (error: any) {
+    console.error('Erro ao buscar perfil:', error)
+    throw new Error(`Erro ao buscar perfil: ${error.message || 'Erro desconhecido'}`)
+  }
+}
+
+async function updateUserProfile(email: string): Promise<void> {
+  if (!authToken) throw new Error('Não autenticado')
+  const res = await fetchWithFallback('/auth/update-profile', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${authToken}`,
+    },
+    body: JSON.stringify({ email }),
+  })
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(text || 'Erro ao atualizar perfil')
+  }
+}
+
+async function forgotPassword(email: string): Promise<void> {
+  const res = await fetchWithFallback('/auth/forgot-password', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ email }),
+  })
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(text || 'Erro ao solicitar recuperação de senha')
+  }
+}
+
+async function resetPassword(token: string, newPassword: string): Promise<void> {
+  const res = await fetchWithFallback('/auth/reset-password', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ token, new_password: newPassword }),
+  })
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(text || 'Erro ao redefinir senha')
   }
 }
 
@@ -197,7 +431,7 @@ function renderPieChart(data: Record<string, number>, containerId: string, title
     path.setAttribute('stroke', '#fff')
     path.setAttribute('stroke-width', '2')
     path.style.cursor = 'pointer'
-    path.title = `${label}: ${value} (${percentage.toFixed(1)}%)`
+    path.setAttribute('title', `${label}: ${value} (${percentage.toFixed(1)}%)`)
     svg.appendChild(path)
     
     currentAngle += angle
@@ -449,6 +683,18 @@ function showChangePassword(isFirstAccess: boolean = false) {
 async function showUserProfile() {
   const app = document.querySelector<HTMLDivElement>('#app')
   if (!app) return
+  
+  // Mostrar loading
+  app.innerHTML = `
+    <main class="app login-card">
+      <div class="app-header">
+        <h1>Meu Perfil</h1>
+      </div>
+      <div class="app-content">
+        <p style="text-align: center; color: #6b7280;">Carregando perfil...</p>
+      </div>
+    </main>
+  `
   
   try {
     const profile = await getUserProfile()
@@ -1028,6 +1274,12 @@ async function showDashboard() {
     showChangePassword(false)
   })
   
+  // Botão perfil
+  const profileBtn = document.querySelector<HTMLButtonElement>('#profile-btn')
+  profileBtn?.addEventListener('click', () => {
+    showUserProfile()
+  })
+  
   // Máscara de CPF
   const cpfInput = document.getElementById('quick-cpf') as HTMLInputElement
   cpfInput?.addEventListener('input', (e) => {
@@ -1128,13 +1380,11 @@ async function showDashboard() {
     if (complemento) addressParts.push(complemento)
     const address = addressParts.join(' - ')
     
-    if (!API_BASE_URL) return
-    
     try {
       let res
       if (userRole === 'user') {
         // Usuário comum usa endpoint de licença gratuita
-        res = await fetch(`${API_BASE_URL}/user/devices/create`, {
+        res = await fetchWithFallback('/user/devices/create', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -1150,7 +1400,7 @@ async function showDashboard() {
         })
       } else {
         // Admin usa endpoint normal
-        res = await fetch(`${API_BASE_URL}/admin/devices/create`, {
+        res = await fetchWithFallback('/admin/devices/create', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

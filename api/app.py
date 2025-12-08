@@ -458,22 +458,43 @@ def create_device_license():
 
         if exists:
             # Atualiza existente
-            cur.execute(
-                """
-                UPDATE devices SET
-                    owner_name=?,
-                    cpf=?,
-                    email=?,
-                    address=?,
-                    license_type=?,
-                    status='active',
-                    start_date=?,
-                    end_date=?,
-                    updated_at=datetime('now')
-                WHERE device_id=?
-                """,
-                (owner_name if owner_name else None, cpf if cpf else None, email if email else None, address if address else None, license_type, today, end, device_id),
-            )
+            # Se created_by for fornecido e usuário for admin, atualiza também
+            created_by_update = data.get("created_by")
+            if created_by_update and user_role == "admin":
+                cur.execute(
+                    """
+                    UPDATE devices SET
+                        owner_name=?,
+                        cpf=?,
+                        email=?,
+                        address=?,
+                        license_type=?,
+                        status='active',
+                        start_date=?,
+                        end_date=?,
+                        created_by=?,
+                        updated_at=datetime('now')
+                    WHERE device_id=?
+                    """,
+                    (owner_name if owner_name else None, cpf if cpf else None, email if email else None, address if address else None, license_type, today, end, created_by_update, device_id),
+                )
+            else:
+                cur.execute(
+                    """
+                    UPDATE devices SET
+                        owner_name=?,
+                        cpf=?,
+                        email=?,
+                        address=?,
+                        license_type=?,
+                        status='active',
+                        start_date=?,
+                        end_date=?,
+                        updated_at=datetime('now')
+                    WHERE device_id=?
+                    """,
+                    (owner_name if owner_name else None, cpf if cpf else None, email if email else None, address if address else None, license_type, today, end, device_id),
+                )
             # Envia email de boas-vindas se email foi fornecido (licença renovada/atualizada)
             if email and config.SMTP_ENABLED:
                 try:
