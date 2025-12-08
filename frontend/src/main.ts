@@ -278,14 +278,41 @@ async function fetchHealth(): Promise<string> {
 
 async function fetchDevices(): Promise<Device[]> {
   try {
+    console.log('🔍 Buscando dispositivos...', { authToken: authToken ? 'presente' : 'ausente' })
     const res = await fetchWithFallback('/admin/devices', {
       headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
     })
-    if (!res.ok) return []
+    console.log('📡 Resposta do servidor:', { status: res.status, ok: res.ok })
+    
+    if (!res.ok) {
+      const errorText = await res.text()
+      console.error('❌ Erro na resposta:', { status: res.status, error: errorText })
+      return []
+    }
+    
     const data = await res.json()
-    return data.items ?? []
+    console.log('📦 Dados recebidos:', data)
+    
+    // Verificar diferentes formatos de resposta
+    if (Array.isArray(data)) {
+      console.log('✅ Dados são um array:', data.length, 'itens')
+      return data
+    }
+    
+    if (data.items && Array.isArray(data.items)) {
+      console.log('✅ Dados em data.items:', data.items.length, 'itens')
+      return data.items
+    }
+    
+    if (data.devices && Array.isArray(data.devices)) {
+      console.log('✅ Dados em data.devices:', data.devices.length, 'itens')
+      return data.devices
+    }
+    
+    console.warn('⚠️  Formato de dados desconhecido:', data)
+    return []
   } catch (error) {
-    console.error('Erro ao buscar dispositivos:', error)
+    console.error('❌ Erro ao buscar dispositivos:', error)
     return []
   }
 }
