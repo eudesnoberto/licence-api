@@ -379,19 +379,12 @@ class DatabaseCursor:
     def fetchall(self):
         """Busca todas as linhas"""
         results = self.cursor.fetchall()
-        if self.is_mysql and results:
-            class Row:
-                def __init__(self, data):
-                    self._data = data
-                def __getitem__(self, key):
-                    if isinstance(key, int):
-                        return list(self._data.values())[key]
-                    return self._data.get(key)
-                def __len__(self):
-                    return len(self._data)
-                def __iter__(self):
-                    return iter(self._data.values())
-            return [Row(r) for r in results]
+        # MySQL com DictCursor já retorna lista de dicts diretamente
+        # SQLite retorna lista de Row objects
+        if self.is_mysql:
+            # pymysql DictCursor já retorna dicts, retornar diretamente
+            return results if results else []
+        # SQLite: retornar Row objects (compatível com código existente)
         return results
     
     def __getattr__(self, name):

@@ -437,14 +437,10 @@ def admin_devices():
         for row in rows_data:
             # MySQL com DictCursor já retorna dict diretamente
             if USE_MYSQL:
-                # pymysql com DictCursor retorna dict diretamente
-                if isinstance(row, dict):
-                    row_dict = row.copy()
-                else:
-                    # Fallback: tentar acessar como dict
-                    row_dict = dict(row) if hasattr(row, '__iter__') else {}
+                # pymysql DictCursor já retorna dict, apenas copiar
+                row_dict = row.copy() if isinstance(row, dict) else dict(row)
             else:
-                # SQLite: Row precisa ser convertido
+                # SQLite: Row precisa ser convertido para dict
                 if hasattr(row, 'keys'):
                     row_dict = {key: row[key] for key in row.keys()}
                 else:
