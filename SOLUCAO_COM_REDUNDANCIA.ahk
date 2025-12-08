@@ -274,7 +274,7 @@ License_Verify() {
         
         psScript := "$ErrorActionPreference = 'Continue'`n"
         psScript .= "try {`n"
-        psScript .= "  $response = Invoke-WebRequest -Uri '" . url . "' -TimeoutSec 10 -UseBasicParsing`n"
+        psScript .= "  $response = Invoke-WebRequest -Uri '" . url . "' -TimeoutSec 30 -UseBasicParsing`n"
         psScript .= "  $response.Content | Out-File -FilePath '" . tempFile . "' -Encoding UTF8 -NoNewline`n"
         psScript .= "} catch {`n"
         psScript .= "  if ($_.Exception.Response) {`n"
