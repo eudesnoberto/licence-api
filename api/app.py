@@ -10,7 +10,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 
 import config
-from db import get_conn, get_cursor
+from db import get_conn, get_cursor, USE_MYSQL
 from license_service import (
     fetch_device,
     is_device_blocklisted,
