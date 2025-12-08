@@ -431,11 +431,29 @@ def admin_devices():
                 """,
                 (username,),
             )
-        rows = [dict(row) for row in cur.fetchall()]
-        # Garantir que created_by existe mesmo em registros antigos
-        for row in rows:
-            if "created_by" not in row:
-                row["created_by"] = None
+        rows_data = cur.fetchall()
+        # Converter rows para dict (compatível com SQLite e MySQL)
+        rows = []
+        for row in rows_data:
+            if USE_MYSQL and hasattr(row, '_data'):
+                # MySQL: Row wrapper tem _data como dict
+                row_dict = row._data.copy()
+            elif hasattr(row, 'keys'):
+                # SQLite Row ou MySQL dict
+                row_dict = {key: row[key] for key in row.keys()}
+            else:
+                # Fallback: tentar dict() normal
+                try:
+                    row_dict = dict(row)
+                except:
+                    row_dict = {}
+            
+            # Garantir que created_by existe mesmo em registros antigos
+            if "created_by" not in row_dict:
+                row_dict["created_by"] = None
+            
+            rows.append(row_dict)
+    
     return json_response({"items": rows})
 
 
