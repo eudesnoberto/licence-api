@@ -121,25 +121,34 @@ def create_user_on_koyeb(token, user_data):
     """Cria usuário no Koyeb"""
     try:
         response = requests.post(
-            f"{KOYEB_API_URL}/admin/users",
+            f"{KOYEB_API_URL}/admin/users/create",
             json={
                 "username": user_data["username"],
-                "password": "TEMPORARY_PASSWORD",  # Precisa ser definido manualmente ou via reset
+                "password": "TEMPORARIA123",  # Senha temporária padrão
                 "email": user_data.get("email"),
                 "role": user_data.get("role", "user")
             },
-            headers={"Authorization": f"Bearer {token}"},
+            headers={
+                "Authorization": f"Bearer {token}",
+                "Content-Type": "application/json"
+            },
             timeout=10
         )
         
         if response.status_code in [200, 201]:
+            print(f"   ✅ Usuário '{user_data['username']}' criado")
             return True
-        elif response.status_code == 409:
-            print(f"   ⚠️  Usuário {user_data['username']} já existe")
-            return True  # Considera sucesso se já existe
+        elif response.status_code == 400:
+            error_text = response.text.lower()
+            if "já existe" in error_text or "already exists" in error_text:
+                print(f"   ⚠️  Usuário '{user_data['username']}' já existe")
+                return True  # Considera sucesso se já existe
+            else:
+                print(f"   ❌ Erro ao criar usuário '{user_data['username']}': {response.text}")
+                return False
         else:
-            print(f"   ❌ Erro ao criar usuário {user_data['username']}: {response.status_code}")
-            print(f"      Resposta: {response.text}")
+            print(f"   ❌ Erro ao criar usuário '{user_data['username']}': {response.status_code}")
+            print(f"      Resposta: {response.text[:200]}")  # Limitar tamanho da resposta
             return False
     except Exception as e:
         print(f"   ❌ Erro ao criar usuário {user_data['username']}: {e}")
@@ -149,32 +158,42 @@ def create_license_on_koyeb(token, license_data):
     """Cria licença no Koyeb"""
     try:
         response = requests.post(
-            f"{KOYEB_API_URL}/admin/devices",
+            f"{KOYEB_API_URL}/admin/devices/create",
             json={
                 "device_id": license_data["device_id"],
                 "owner_name": license_data.get("owner_name"),
                 "license_type": license_data["license_type"],
-                "status": license_data.get("status", "active"),
-                "start_date": license_data["start_date"],
-                "end_date": license_data.get("end_date"),
                 "cpf": license_data.get("cpf"),
                 "address": license_data.get("address"),
                 "email": license_data.get("email"),
                 "created_by": license_data.get("created_by", "admin")
             },
-            headers={"Authorization": f"Bearer {token}"},
+            headers={
+                "Authorization": f"Bearer {token}",
+                "Content-Type": "application/json"
+            },
             timeout=10
         )
         
         if response.status_code in [200, 201]:
+            device_id_short = license_data['device_id'][:20] + "..." if len(license_data['device_id']) > 20 else license_data['device_id']
+            print(f"   ✅ Licença '{device_id_short}' criada")
             return True
-        elif response.status_code == 409:
-            # Licença já existe, tentar atualizar created_by
-            print(f"   ⚠️  Licença {license_data['device_id']} já existe, atualizando created_by...")
-            return update_created_by_on_koyeb(token, license_data["device_id"], license_data.get("created_by", "admin"))
+        elif response.status_code == 400:
+            error_text = response.text.lower()
+            if "já registrado" in error_text or "already registered" in error_text or "já existe" in error_text:
+                # Licença já existe, tentar atualizar created_by
+                device_id_short = license_data['device_id'][:20] + "..." if len(license_data['device_id']) > 20 else license_data['device_id']
+                print(f"   ⚠️  Licença '{device_id_short}' já existe, atualizando created_by...")
+                return update_created_by_on_koyeb(token, license_data["device_id"], license_data.get("created_by", "admin"))
+            else:
+                device_id_short = license_data['device_id'][:20] + "..." if len(license_data['device_id']) > 20 else license_data['device_id']
+                print(f"   ❌ Erro ao criar licença '{device_id_short}': {response.text[:200]}")
+                return False
         else:
-            print(f"   ❌ Erro ao criar licença {license_data['device_id']}: {response.status_code}")
-            print(f"      Resposta: {response.text}")
+            device_id_short = license_data['device_id'][:20] + "..." if len(license_data['device_id']) > 20 else license_data['device_id']
+            print(f"   ❌ Erro ao criar licença '{device_id_short}': {response.status_code}")
+            print(f"      Resposta: {response.text[:200]}")  # Limitar tamanho da resposta
             return False
     except Exception as e:
         print(f"   ❌ Erro ao criar licença {license_data['device_id']}: {e}")
