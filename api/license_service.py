@@ -3,7 +3,7 @@ from datetime import date, datetime, timezone, timedelta
 from typing import Any, Dict, Optional, List, Tuple
 
 import config
-from db import get_conn
+from db import get_conn, get_cursor
 
 
 def _row_to_dict(row) -> Dict[str, Any]:
@@ -12,7 +12,7 @@ def _row_to_dict(row) -> Dict[str, Any]:
 
 def fetch_device(device_id: str) -> Optional[Dict[str, Any]]:
     with get_conn() as conn:
-        cur = conn.cursor()
+        cur = get_cursor(conn)
         cur.execute(
             "SELECT * FROM devices WHERE device_id = ? LIMIT 1",
             (device_id,),
@@ -23,7 +23,7 @@ def fetch_device(device_id: str) -> Optional[Dict[str, Any]]:
 
 def is_device_blocklisted(device_id: str) -> bool:
     with get_conn() as conn:
-        cur = conn.cursor()
+        cur = get_cursor(conn)
         cur.execute(
             "SELECT 1 FROM blocked_devices WHERE device_id = ? LIMIT 1",
             (device_id,),
@@ -38,7 +38,7 @@ def auto_create_device(device_id: str) -> Dict[str, Any]:
     end = calculate_end_date(license_type, start)
 
     with get_conn() as conn:
-        cur = conn.cursor()
+        cur = get_cursor(conn)
         cur.execute(
             """
             INSERT INTO devices (device_id, license_type, status, start_date, end_date)
@@ -146,7 +146,7 @@ def detect_clone_usage(device_id: str, current_ip: str, current_hostname: str) -
         return (False, None)
     
     with get_conn() as conn:
-        cur = conn.cursor()
+        cur = get_cursor(conn)
         
         # Busca acessos recentes do mesmo Device ID (dentro da janela de tempo)
         window_start = (datetime.now(timezone.utc) - timedelta(seconds=config.CLONE_DETECTION_WINDOW)).isoformat()
@@ -213,7 +213,7 @@ def detect_clone_usage(device_id: str, current_ip: str, current_hostname: str) -
 
 def update_device_seen(primary_id: int, ip: str, version: str, hostname: str) -> None:
     with get_conn() as conn:
-        cur = conn.cursor()
+        cur = get_cursor(conn)
         cur.execute(
             """
             UPDATE devices
@@ -240,7 +240,7 @@ def insert_access_log(
     user_agent: str,
 ) -> None:
     with get_conn() as conn:
-        cur = conn.cursor()
+        cur = get_cursor(conn)
         cur.execute(
             """
             INSERT INTO access_logs

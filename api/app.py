@@ -10,7 +10,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 
 import config
-from db import get_conn
+from db import get_conn, get_cursor
 from license_service import (
     fetch_device,
     is_device_blocklisted,
@@ -292,7 +292,7 @@ def verify():
         
         # Bloqueia automaticamente
         with get_conn() as conn:
-            cur = conn.cursor()
+            cur = get_cursor(conn)
             cur.execute(
                 "UPDATE devices SET status = 'blocked', updated_at = datetime('now') WHERE device_id = ?",
                 (id_,),
@@ -376,7 +376,7 @@ def admin_devices():
     user_role = getattr(request, "user_role", "admin")
     
     with get_conn() as conn:
-        cur = conn.cursor()
+        cur = get_cursor(conn)
         if user_role == "admin":
             # Admin vê todas as licenças
             cur.execute(
@@ -464,7 +464,7 @@ def create_device_license():
     end = calculate_end_date(license_type, today)
 
     with get_conn() as conn:
-        cur = conn.cursor()
+        cur = get_cursor(conn)
         # Verifica se já existe
         username = getattr(request, "admin_username", None)
         cur.execute("SELECT id, created_by FROM devices WHERE device_id = ?", (device_id,))
@@ -612,7 +612,7 @@ def create_pix_payment():
     end = calculate_end_date(license_type, today)
 
     with get_conn() as conn:
-        cur = conn.cursor()
+        cur = get_cursor(conn)
         cur.execute(
             """
             INSERT INTO devices (
@@ -692,7 +692,7 @@ def admin_login():
         return json_response({"error": "Credenciais obrigatórias."}, 400)
 
     with get_conn() as conn:
-        cur = conn.cursor()
+        cur = get_cursor(conn)
         # Primeiro tenta admin_users
         cur.execute(
             "SELECT password_hash, must_change_password FROM admin_users WHERE username = ? LIMIT 1",
@@ -744,7 +744,7 @@ def admin_change_password():
         return json_response({"error": "Unauthorized"}, 401)
 
     with get_conn() as conn:
-        cur = conn.cursor()
+        cur = get_cursor(conn)
         # Verificar em admin_users primeiro
         cur.execute(
             "SELECT password_hash FROM admin_users WHERE username = ? LIMIT 1",
@@ -790,7 +790,7 @@ def _user_hash_password(raw: str) -> str:
 def admin_users():
     """Lista todos os usuários/revendedores."""
     with get_conn() as conn:
-        cur = conn.cursor()
+        cur = get_cursor(conn)
         cur.execute(
             """
             SELECT id, username, email, role, created_at
@@ -832,7 +832,7 @@ def admin_users_create():
         return json_response({"error": "Role deve ser 'admin' ou 'user'."}, 400)
 
     with get_conn() as conn:
-        cur = conn.cursor()
+        cur = get_cursor(conn)
         # Verificar se usuário já existe em users
         cur.execute("SELECT id FROM users WHERE username = ? LIMIT 1", (username,))
         if cur.fetchone():
@@ -870,7 +870,7 @@ def user_devices_create():
     
     # Verificar se é usuário comum
     with get_conn() as conn:
-        cur = conn.cursor()
+        cur = get_cursor(conn)
         # Verificar em users
         cur.execute("SELECT role FROM users WHERE username = ? LIMIT 1", (username,))
         row = cur.fetchone()
@@ -897,7 +897,7 @@ def user_devices_create():
     license_type = "vitalicia"
 
     with get_conn() as conn:
-        cur = conn.cursor()
+        cur = get_cursor(conn)
         cur.execute("SELECT id FROM devices WHERE device_id = ? LIMIT 1", (device_id,))
         if cur.fetchone():
             return json_response({"error": "Device ID já registrado."}, 400)
@@ -940,7 +940,7 @@ def update_device_created_by():
         return json_response({"error": "device_id e created_by são obrigatórios."}, 400)
     
     with get_conn() as conn:
-        cur = conn.cursor()
+        cur = get_cursor(conn)
         # Verificar se licença existe
         cur.execute("SELECT id FROM devices WHERE device_id = ?", (device_id,))
         if not cur.fetchone():
@@ -970,7 +970,7 @@ def deactivate_device(device_id: str):
         return json_response({"error": "Não autenticado."}, 401)
     
     with get_conn() as conn:
-        cur = conn.cursor()
+        cur = get_cursor(conn)
         
         # Verificar se licença existe e obter status atual
         cur.execute("SELECT id, status, created_by FROM devices WHERE device_id = ?", (device_id,))
@@ -1021,7 +1021,7 @@ def delete_device(device_id: str):
         return json_response({"error": "Apenas administradores podem excluir licenças."}, 403)
     
     with get_conn() as conn:
-        cur = conn.cursor()
+        cur = get_cursor(conn)
         
         # Verificar se licença existe
         cur.execute("SELECT id FROM devices WHERE device_id = ?", (device_id,))
@@ -1049,7 +1049,7 @@ def user_profile():
     if request.method == "GET":
         # GET: Retornar perfil do usuário
         with get_conn() as conn:
-            cur = conn.cursor()
+            cur = get_cursor(conn)
             # Verificar em users
             cur.execute(
                 "SELECT id, username, email, role, created_at FROM users WHERE username = ? LIMIT 1",
@@ -1088,7 +1088,7 @@ def user_profile():
         email = (data.get("email") or "").strip() or None
         
         with get_conn() as conn:
-            cur = conn.cursor()
+            cur = get_cursor(conn)
             # Verificar em users
             cur.execute("SELECT id FROM users WHERE username = ? LIMIT 1", (username,))
             row = cur.fetchone()
@@ -1117,7 +1117,7 @@ def forgot_password():
         return json_response({"error": "Recuperação de senha por email não está habilitada."}, 503)
     
     with get_conn() as conn:
-        cur = conn.cursor()
+        cur = get_cursor(conn)
         # Verificar em users
         cur.execute(
             "SELECT username FROM users WHERE email = ? LIMIT 1",
@@ -1231,7 +1231,7 @@ def reset_password():
         return json_response({"error": "Senha deve ter no mínimo 6 caracteres."}, 400)
     
     with get_conn() as conn:
-        cur = conn.cursor()
+        cur = get_cursor(conn)
         # Verificar token
         cur.execute(
             """

@@ -5,10 +5,26 @@ load_dotenv()
 
 # ---------------------------------------------------------------------------
 # Banco de dados
-# Agora usando SQLite em um arquivo local, para simplificar o ambiente.
+# Suporta SQLite (local) ou MySQL (remoto)
 # ---------------------------------------------------------------------------
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.getenv("DB_PATH", os.path.join(BASE_DIR, "license.db"))
+
+# Configuração MySQL (HostGator)
+DB_TYPE = os.getenv("DB_TYPE", "sqlite").lower()  # "sqlite" ou "mysql"
+
+# MySQL Configuration
+MYSQL_HOST = os.getenv("MYSQL_HOST", "108.179.252.54")
+MYSQL_PORT = int(os.getenv("MYSQL_PORT", "3306"))
+MYSQL_DATABASE = os.getenv("MYSQL_DATABASE", "scpmtc84_api")
+MYSQL_USER = os.getenv("MYSQL_USER", "scpmtc84_api")
+MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "nQT-8gW%-qCY")
+
+# Connection string MySQL (para uso com pymysql)
+if DB_TYPE == "mysql":
+    MYSQL_CONNECTION_STRING = f"mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}?charset=utf8mb4"
+else:
+    MYSQL_CONNECTION_STRING = None
 
 # ---------------------------------------------------------------------------
 # Segurança / políticas
