@@ -29,7 +29,7 @@ Manter o servidor Render ativo fazendo ping a cada 5 minutos, evitando que ele "
 3. **Preencha o formulário:**
    - **Monitor Type**: Selecione **"HTTP(s)"**
    - **Friendly Name**: `License API Keep-Alive`
-   - **URL (or IP)**: `https://licence-api-zsbg.onrender.com/ping`
+   - **URL (or IP)**: `https://licence-api-6evg.onrender.com/ping`
    - **Monitoring Interval**: Selecione **"5 minutes"** (mínimo no plano free)
    - **Alert Contacts**: (Opcional) Adicione seu email para receber alertas
 
@@ -74,7 +74,7 @@ Agora o UptimeRobot fará ping no seu servidor a cada 5 minutos:
 
 ### **3. Teste Manual:**
 ```bash
-curl https://licence-api-zsbg.onrender.com/ping
+curl https://licence-api-6evg.onrender.com/ping
 ```
 
 Deve retornar:
