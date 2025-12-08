@@ -1,0 +1,31 @@
+═══════════════════════════════════════════════════════════════
+  CREDENCIAIS CONFIGURADAS
+═══════════════════════════════════════════════════════════════
+
+API_KEY:
+CFEC44D0118C85FBA54A4B96C89140C6
+
+SHARED_SECRET:
+BF70ED46DC0E1A2A2D9B9488DE569D96A50E8EF4A23B8F79F45413371D8CAC2D
+
+═══════════════════════════════════════════════════════════════
+  ONDE ESTÃO CONFIGURADAS
+═══════════════════════════════════════════════════════════════
+
+✓ Backend: api/.env (já salvo automaticamente)
+✓ Cliente: youtube_tv_standalone.ahk (linhas 12-13) - JÁ ATUALIZADO
+
+═══════════════════════════════════════════════════════════════
+  IMPORTANTE
+═══════════════════════════════════════════════════════════════
+
+✓ Use as MESMAS credenciais no backend e no cliente
+✓ Mantenha seguras - não compartilhe publicamente
+✓ Se precisar gerar novas, execute: .\gerar_credenciais.ps1
+
+═══════════════════════════════════════════════════════════════
+
+
+
+
+

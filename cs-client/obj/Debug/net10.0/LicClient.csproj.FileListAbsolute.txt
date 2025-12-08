@@ -1,0 +1,14 @@
+C:\protecao\cs-client\bin\Debug\net10.0\LicClient.exe
+C:\protecao\cs-client\bin\Debug\net10.0\LicClient.deps.json
+C:\protecao\cs-client\bin\Debug\net10.0\LicClient.runtimeconfig.json
+C:\protecao\cs-client\bin\Debug\net10.0\LicClient.dll
+C:\protecao\cs-client\bin\Debug\net10.0\LicClient.pdb
+C:\protecao\cs-client\obj\Debug\net10.0\LicClient.GeneratedMSBuildEditorConfig.editorconfig
+C:\protecao\cs-client\obj\Debug\net10.0\LicClient.AssemblyInfoInputs.cache
+C:\protecao\cs-client\obj\Debug\net10.0\LicClient.AssemblyInfo.cs
+C:\protecao\cs-client\obj\Debug\net10.0\LicClient.csproj.CoreCompileInputs.cache
+C:\protecao\cs-client\obj\Debug\net10.0\LicClient.dll
+C:\protecao\cs-client\obj\Debug\net10.0\refint\LicClient.dll
+C:\protecao\cs-client\obj\Debug\net10.0\LicClient.pdb
+C:\protecao\cs-client\obj\Debug\net10.0\LicClient.genruntimeconfig.cache
+C:\protecao\cs-client\obj\Debug\net10.0\ref\LicClient.dll

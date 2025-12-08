@@ -1,0 +1,60 @@
+================================================================================
+INSTRUÇÕES PARA CORRIGIR CODIFICAÇÃO DO ARQUIVO .AHK
+================================================================================
+
+O arquivo youtube_tv_standalone.ahk foi atualizado com acentuação correta,
+mas para que os caracteres especiais sejam exibidos corretamente no MsgBox,
+o arquivo DEVE ser salvo como UTF-8 com BOM.
+
+COMO SALVAR COMO UTF-8 COM BOM:
+--------------------------------
+
+1. No SciTE4AutoHotkey:
+   - File > Encoding > UTF-8 with BOM
+   - Salve o arquivo (Ctrl+S)
+
+2. No Notepad++:
+   - Encoding > Convert to UTF-8-BOM
+   - Salve o arquivo (Ctrl+S)
+
+3. No VS Code:
+   - Clique no canto inferior direito onde mostra "UTF-8"
+   - Selecione "Save with Encoding"
+   - Escolha "UTF-8 with BOM"
+   - Salve o arquivo (Ctrl+S)
+
+4. No PowerShell (se necessário):
+   $content = Get-Content -Path "youtube_tv_standalone.ahk" -Encoding UTF8
+   $utf8BOM = New-Object System.Text.UTF8Encoding $true
+   [System.IO.File]::WriteAllText("youtube_tv_standalone.ahk", $content, $utf8BOM)
+
+VERIFICAR SE ESTÁ CORRETO:
+---------------------------
+Após salvar, execute o script e verifique se as mensagens exibem:
+- "Licença" (não "Licenca")
+- "não" (não "nao")
+- "é" (não "e")
+- "válida" (não "valida")
+- "será" (não "sera")
+
+MENSAGENS CORRIGIDAS:
+---------------------
+✓ "Licença Inválida" (título)
+✓ "Sua licença não é válida ou expirou"
+✓ "Licença válida"
+✓ "Licença válida (modo offline)"
+✓ "Token não corresponde a este dispositivo"
+✓ "Erro de conexão"
+✓ "Erro ao gerar assinatura criptográfica"
+✓ "Não foi possível gerar Device ID"
+✓ "O programa será encerrado"
+✓ Todas as outras mensagens
+
+================================================================================
+IMPORTANTE: Sem UTF-8 com BOM, os acentos podem aparecer como "?" ou caracteres
+estranhos no MsgBox do Windows.
+================================================================================
+
+
+
+

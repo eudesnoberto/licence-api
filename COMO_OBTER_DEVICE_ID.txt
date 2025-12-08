@@ -1,0 +1,64 @@
+═══════════════════════════════════════════════════════════════
+  COMO OBTER O DEVICE ID DE UM PC - GUIA RÁPIDO
+═══════════════════════════════════════════════════════════════
+
+MÉTODO MAIS FÁCIL (RECOMENDADO):
+─────────────────────────────────
+
+1. Envie para o cliente:
+   ✓ obter_device_id.ahk
+   ✓ license_check.ahk (mesma pasta)
+
+2. Cliente executa obter_device_id.ahk:
+   ✓ Aparece uma mensagem com o Device ID
+   ✓ O ID é copiado automaticamente (Ctrl+V para colar)
+   ✓ Cliente envia o ID para você
+
+3. Você cadastra no dashboard:
+   ✓ Acessa: http://localhost:5173
+   ✓ Login: admin / admin123
+   ✓ Seção "Cadastro Rápido por Device ID"
+   ✓ Cola o Device ID
+   ✓ Escolhe o plano (mensal, trimestral, anual, etc)
+   ✓ Clica "Criar Licença"
+
+4. Pronto! Cliente pode usar normalmente.
+
+
+MÉTODO ALTERNATIVO (Sem script auxiliar):
+──────────────────────────────────────────
+
+1. Cliente executa o script protegido:
+   ✓ Script cria arquivo "device.id" automaticamente
+   ✓ Script fecha (porque não tem licença)
+
+2. Cliente envia o arquivo "device.id":
+   ✓ Arquivo está na mesma pasta do .exe
+   ✓ Você abre com Bloco de Notas
+   ✓ Copia o conteúdo (é o Device ID)
+
+3. Você cadastra no dashboard (mesmo processo acima)
+
+
+ONDE FICA O ARQUIVO device.id?
+───────────────────────────────
+✓ Na mesma pasta do executável .exe
+✓ Exemplo: Se o .exe está em C:\Programas\
+           O device.id também está em C:\Programas\
+
+
+EXEMPLO PRÁTICO:
+────────────────
+
+Cliente executa script → Gera: abc123def456ghi789...
+Cliente envia: "Meu Device ID é: abc123def456ghi789..."
+Você cola no dashboard → Escolhe plano → Cria licença
+Cliente executa novamente → FUNCIONA! ✅
+
+
+═══════════════════════════════════════════════════════════════
+
+
+
+
+

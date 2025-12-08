@@ -1,0 +1,48 @@
+═══════════════════════════════════════════════════════════════
+  COMO GERAR E CONFIGURAR CREDENCIAIS - GUIA RÁPIDO
+═══════════════════════════════════════════════════════════════
+
+PASSO 1: GERAR AS CREDENCIAIS
+──────────────────────────────
+Execute no PowerShell:
+  .\gerar_credenciais.ps1
+
+O script vai:
+  ✓ Gerar API_KEY e SHARED_SECRET automaticamente
+  ✓ Salvar no api/.env (se você escolher)
+  ✓ Mostrar as credenciais para você copiar
+  ✓ Copiar para área de transferência
+
+
+PASSO 2: CONFIGURAR NO CLIENTE
+───────────────────────────────
+Edite: youtube_tv_standalone.ahk
+
+Linha 12: g_LicenseAPI_Key := "COLE_A_API_KEY_AQUI"
+Linha 13: g_LicenseAPI_Secret := "COLE_O_SHARED_SECRET_AQUI"
+
+Use as MESMAS credenciais que foram salvas no api/.env!
+
+
+CREDENCIAIS ATUAIS (já configuradas):
+──────────────────────────────────────
+API_KEY: CFEC44D0118C85FBA54A4B96C89140C6
+SHARED_SECRET: BF70ED46DC0E1A2A2D9B9488DE569D96A50E8EF4A23B8F79F45413371D8CAC2D
+
+✓ Já salvas em: api/.env
+✓ Já configuradas em: youtube_tv_standalone.ahk
+
+
+IMPORTANTE:
+───────────
+✓ Use as MESMAS credenciais no backend e no cliente
+✓ Se gerar novas, atualize AMBOS os lugares
+✓ Mantenha seguras - não compartilhe publicamente
+
+
+═══════════════════════════════════════════════════════════════
+
+
+
+
+

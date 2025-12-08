@@ -1,0 +1,53 @@
+═══════════════════════════════════════════════════════════════
+  ERRO: "Licença Inválida" - COMO RESOLVER
+═══════════════════════════════════════════════════════════════
+
+PASSO 1: OBTER O DEVICE ID
+───────────────────────────
+A mensagem de erro agora mostra o Device ID automaticamente.
+OU procure o arquivo "device.id" na mesma pasta do script.
+
+Copie o Device ID que aparece na mensagem.
+
+
+PASSO 2: VERIFICAR SE O BACKEND ESTÁ RODANDO
+──────────────────────────────────────────────
+Abra PowerShell e execute:
+
+  cd C:\protecao
+  .\iniciar-backend.ps1
+
+OU teste se está respondendo:
+  http://localhost:5000/health
+
+
+PASSO 3: CADASTRAR NO DASHBOARD
+───────────────────────────────
+1. Acesse: http://localhost:5173
+2. Login: admin / admin123
+3. Seção "Cadastro Rápido por Device ID"
+4. Cole o Device ID (que você copiou)
+5. Escolha o tipo de licença (mensal, anual, etc)
+6. Clique "Criar Licença"
+
+
+PASSO 4: TESTAR NOVAMENTE
+──────────────────────────
+Execute o script protegido novamente.
+Agora deve funcionar! ✅
+
+
+VERIFICAÇÕES IMPORTANTES:
+──────────────────────────
+✓ Backend rodando (python app.py)
+✓ Credenciais iguais no backend e cliente
+✓ URL da API correta (http://127.0.0.1:5000 ou https://api.fartgreen.fun)
+✓ Device ID cadastrado no dashboard
+
+
+═══════════════════════════════════════════════════════════════
+
+
+
+
+

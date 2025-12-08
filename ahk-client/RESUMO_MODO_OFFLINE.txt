@@ -1,0 +1,57 @@
+================================================================================
+SISTEMA DE MODO OFFLINE - RESUMO RÁPIDO
+================================================================================
+
+O sistema agora suporta modo offline com período de graça de 7 dias.
+
+COMO FUNCIONA:
+--------------
+1. Quando servidor está ONLINE:
+   - Cliente conecta ao servidor
+   - Recebe license_token assinado
+   - Salva token localmente (license_token.json)
+   - Sistema funciona normalmente
+
+2. Quando servidor está OFFLINE:
+   - Cliente tenta conectar (falha)
+   - Carrega token salvo localmente
+   - Valida token offline (sem servidor)
+   - Permite uso durante período de graça (7 dias)
+   - Sistema continua funcionando
+
+PERÍODO DE GRAÇA:
+-----------------
+- Padrão: 7 dias
+- Significa: Sistema funciona offline por até 7 dias após expiração
+- Configurável: Altere g_LicenseOffline_GracePeriodDays no script
+
+ARQUIVOS:
+---------
+- license_token.json: Token salvo para uso offline
+- license_offline_mode.txt: Log quando modo offline é ativado
+- license_verification_result.txt: Resultado da verificação
+
+SEGURANÇA:
+----------
+- Token é assinado com HMAC-SHA256 (não pode ser falsificado)
+- Valida Device ID (não funciona em outro PC)
+- Valida status e expiração
+- Período de graça limitado
+
+TESTAR:
+-------
+1. Execute com servidor online (gera token)
+2. Pare o servidor
+3. Execute novamente (deve funcionar offline)
+4. Verifique license_token.json foi criado
+
+CONFIGURAÇÃO:
+-------------
+No script, linha ~437:
+g_LicenseOffline_GracePeriodDays := 7  ; Altere aqui
+
+================================================================================
+
+
+
+

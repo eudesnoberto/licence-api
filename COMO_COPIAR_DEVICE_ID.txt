@@ -1,0 +1,45 @@
+═══════════════════════════════════════════════════════════════
+  COMO COPIAR O DEVICE ID - ATUALIZADO
+═══════════════════════════════════════════════════════════════
+
+AGORA É AUTOMÁTICO! ✅
+─────────────────────
+O Device ID é copiado automaticamente para a área de transferência
+quando a mensagem de erro aparece.
+
+Você só precisa:
+1. Ver o Device ID na mensagem
+2. Pressionar Ctrl+V em qualquer lugar para colar
+3. Enviar para cadastrar no dashboard
+
+
+COMO USAR:
+──────────
+1. Quando aparecer a mensagem "Licença Inválida"
+2. O Device ID já está copiado automaticamente
+3. Abra o dashboard (http://localhost:5173)
+4. Cole o Device ID com Ctrl+V
+5. Escolha o plano e crie a licença
+
+
+EXEMPLO:
+────────
+Device ID mostrado: 2049365993desktop-j65uer12025112
+
+Este ID já está na área de transferência!
+Basta colar (Ctrl+V) no dashboard.
+
+
+SE NÃO FUNCIONAR:
+─────────────────
+1. Selecione o Device ID na mensagem com o mouse
+2. Pressione Ctrl+C para copiar manualmente
+3. Ou anote o Device ID e digite manualmente
+
+
+═══════════════════════════════════════════════════════════════
+
+
+
+
+

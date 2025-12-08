@@ -1,0 +1,64 @@
+═══════════════════════════════════════════════════════════════
+  ERRO: "Erro ao gerar Device ID" - SOLUÇÃO
+═══════════════════════════════════════════════════════════════
+
+PROBLEMA:
+─────────
+O script não consegue criar/escrever o arquivo device.id na pasta.
+
+SOLUÇÕES:
+─────────
+
+SOLUÇÃO 1: Executar como Administrador (MAIS FÁCIL)
+─────────────────────────────────────────────────────
+1. Clique com botão direito no script
+2. Escolha "Executar como administrador"
+3. Isso resolve problemas de permissão
+
+
+SOLUÇÃO 2: Verificar Permissões da Pasta
+─────────────────────────────────────────
+1. Clique com botão direito na pasta onde está o script
+2. Propriedades → Segurança
+3. Verifique se você tem permissão de "Gravar"
+4. Se não tiver, clique em "Editar" e dê permissão
+
+
+SOLUÇÃO 3: Mover para Outra Pasta
+──────────────────────────────────
+1. Mova o script para uma pasta com permissões (ex: Documentos)
+2. Execute de lá
+3. O Device ID será salvo em %APPDATA%\LicenseSystem\device.id
+
+
+SOLUÇÃO 4: Usar Pasta do Usuário
+─────────────────────────────────
+O código agora tenta salvar em:
+- Primeiro: Pasta do script (device.id)
+- Se falhar: %APPDATA%\LicenseSystem\device.id
+
+Isso resolve a maioria dos problemas de permissão!
+
+
+VERIFICAÇÕES:
+─────────────
+✓ Script tem permissão de escrita na pasta?
+✓ Antivírus não está bloqueando?
+✓ Pasta não está em "Somente Leitura"?
+✓ Executou como administrador?
+
+
+O QUE FOI CORRIGIDO:
+────────────────────
+✓ Agora tenta salvar em %APPDATA% se falhar na pasta do script
+✓ Melhor tratamento de erros
+✓ Método alternativo se PowerShell falhar
+✓ Mensagem de erro mais clara
+
+
+═══════════════════════════════════════════════════════════════
+
+
+
+
+
