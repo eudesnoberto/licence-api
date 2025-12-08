@@ -959,9 +959,9 @@ def get_user_profile():
     return json_response({"error": "Usuário não encontrado."}, 404)
 
 
-@app.route("/user/profile", methods=["PUT"])
+@app.route("/user/profile", methods=["GET", "PUT"])
 @require_admin
-def update_user_profile():
+def user_profile():
     """Permite usuário atualizar seus próprios dados."""
     username = getattr(request, "admin_username", None)
     data = request.get_json(silent=True) or {}

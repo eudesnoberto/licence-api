@@ -293,7 +293,7 @@ async function changePassword(oldPassword: string, newPassword: string): Promise
 async function getUserProfile(): Promise<{ username: string; email: string | null; role: string; created_at: string }> {
   if (!authToken) throw new Error('Não autenticado')
   try {
-    const res = await fetchWithFallback('/auth/profile', {
+    const res = await fetchWithFallback('/user/profile', {
       headers: {
         Authorization: `Bearer ${authToken}`,
       },
@@ -312,7 +312,7 @@ async function getUserProfile(): Promise<{ username: string; email: string | nul
 
 async function updateUserProfile(email: string): Promise<void> {
   if (!authToken) throw new Error('Não autenticado')
-  const res = await fetchWithFallback('/auth/update-profile', {
+  const res = await fetchWithFallback('/user/profile', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
