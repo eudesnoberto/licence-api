@@ -177,13 +177,16 @@ async function fetchWithFallback(
     localStorage.removeItem('apiWorkingServer')
   }
   
-  // Mensagem de erro mais clara
+  // Mensagem de erro mais clara e útil
   let errorMsg = 'Não foi possível conectar aos servidores.'
+  const serversList = servers.map(s => new URL(s).hostname).join(', ')
+  
   if (corsError) {
-    errorMsg = `Todos os servidores falharam. Último erro: Erro de conexão com ${lastServerTried || 'servidor'} (CORS ou servidor offline)`
+    errorMsg = `Não foi possível conectar aos servidores (${serversList}).\n\nO servidor pode estar temporariamente offline ou há um problema de conexão.\n\nTente novamente em alguns instantes.`
   } else if (lastError) {
-    errorMsg = `Todos os servidores falharam. Último erro: ${lastError.message}`
+    errorMsg = `Não foi possível conectar aos servidores (${serversList}).\n\nÚltimo erro: ${lastError.message}\n\nTente novamente em alguns instantes.`
   }
+  
   console.error('❌ Todos os servidores falharam:', {
     servidoresTentados: servers,
     ultimoServidor: lastServerTried,
