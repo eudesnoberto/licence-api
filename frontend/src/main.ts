@@ -723,7 +723,16 @@ function showLogin() {
           await showDashboard()
         }
       } catch (err: any) {
-        alert(err?.message ?? 'Falha no login')
+        let errorMessage = err?.message ?? 'Falha no login'
+        
+        // Melhorar mensagem de erro de conexão
+        if (errorMessage.includes('servidores falharam') || errorMessage.includes('conectar aos servidores')) {
+          errorMessage = 'Não foi possível conectar aos servidores.\n\nOs servidores podem estar temporariamente offline.\n\nTente novamente em alguns instantes ou verifique sua conexão com a internet.'
+        } else if (errorMessage.includes('CORS') || errorMessage.includes('offline')) {
+          errorMessage = 'Erro de conexão com o servidor.\n\nO servidor pode estar temporariamente offline.\n\nTente novamente em alguns instantes.'
+        }
+        
+        alert(errorMessage)
       }
   })
 }
