@@ -1,0 +1,14 @@
+[build]
+builder = "nixpacks"
+
+[run]
+command = "cd api && python app.py"
+
+[env]
+DB_TYPE = "mysql"
+MYSQL_HOST = "108.179.252.54"
+MYSQL_PORT = "3306"
+MYSQL_DATABASE = "scpmtc84_api"
+MYSQL_USER = "scpmtc84_api"
+MYSQL_PASSWORD = "nQT-8gW%-qCY"
+
