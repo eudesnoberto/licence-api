@@ -1,5 +1,8 @@
 [build]
-builder = "nixpacks"
+builder = "docker"
+# OU use buildpack sem build command customizado:
+# builder = "nixpacks"
+# (remova qualquer build command customizado no dashboard)
 
 [run]
 command = "cd api && python app.py"
