@@ -158,7 +158,7 @@ Aqui está um exemplo completo de um script simples protegido:
 
 ; Configuração do sistema de licenças
 global g_LicenseAPI_BaseURL := "https://api.fartgreen.fun"
-global g_LicenseAPI_Key := "CFEC44D0118C85FBA54A4B96C89140C6"
+global g_LicenseAPI_Key := "SUA_API_KEY_AQUI"
 global g_LicenseAPI_Secret := "SEU_SHARED_SECRET_AQUI"
 global g_LicenseAPI_Version := "1.0.0"
 

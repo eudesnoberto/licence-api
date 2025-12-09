@@ -55,7 +55,7 @@ Uma assinatura SHA256 válida deve ter:
 Teste a função SHA256 manualmente:
 
 ```powershell
-$text = "2049365993desktop-j65uer12025112|1.0.0|20251128221909|BF70ED46DC0E1A2A2D9B9488DE569D96A50E8EF4A23B8F79F45413371D8CAC2D"
+$text = "2049365993desktop-j65uer12025112|1.0.0|20251128221909|SEU_SHARED_SECRET_AQUI"
 $bytes = [System.Text.Encoding]::UTF8.GetBytes($text)
 $sha256 = [System.Security.Cryptography.SHA256]::Create()
 $hashBytes = $sha256.ComputeHash($bytes)

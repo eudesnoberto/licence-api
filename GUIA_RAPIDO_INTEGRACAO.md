@@ -15,8 +15,8 @@ Copie estas linhas (aproximadamente linhas 17-20):
 
 ```autohotkey
 g_LicenseAPI_BaseURL := "https://api.fartgreen.fun"
-g_LicenseAPI_Key := "CFEC44D0118C85FBA54A4B96C89140C6"
-g_LicenseAPI_Secret := "BF70ED46DC0E1A2A2D9B9488DE569D96A50E8EF4A23B8F79F45413371D8CAC2D"
+g_LicenseAPI_Key := "SUA_API_KEY_AQUI"
+g_LicenseAPI_Secret := "SEU_SHARED_SECRET_AQUI"
 g_LicenseAPI_Version := "1.0.0"
 
 global g_LicenseVerify_DeviceId := ""

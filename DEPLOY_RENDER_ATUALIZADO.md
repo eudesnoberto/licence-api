@@ -74,8 +74,8 @@ Certifique-se de que estas variáveis estão configuradas no Render:
 
 - `FLASK_ENV=production`
 - `PORT=8080` (ou a porta que o Render usar)
-- `API_KEY=CFEC44D0118C85FBA54A4B96C89140C6`
-- `SHARED_SECRET=BF70ED46DC0E1A2A2D9B9488DE569D96A50E8EF4A23B8F79F45413371D8CAC2D`
+- `API_KEY=SUA_API_KEY_AQUI`
+- `SHARED_SECRET=SEU_SHARED_SECRET_AQUI`
 - `SMTP_ENABLED=false` (ou true se configurou email)
 
 ### **Build Command:**

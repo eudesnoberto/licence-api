@@ -57,7 +57,7 @@ Verifique os arquivos de log em `%TEMP%`:
 
 Execute no PowerShell:
 ```powershell
-$url = "https://licence-api-6evg.onrender.com/verify?id=2049365993desktop-j65uer12025112&version=1.0.0&ts=20251208203000&sig=test&api_key=CFEC44D0118C85FBA54A4B96C89140C6"
+$url = "https://licence-api-6evg.onrender.com/verify?id=2049365993desktop-j65uer12025112&version=1.0.0&ts=20251208203000&sig=test&api_key=SUA_API_KEY_AQUI"
 Invoke-WebRequest -Uri $url -TimeoutSec 30 -UseBasicParsing
 ```
 
