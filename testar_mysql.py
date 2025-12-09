@@ -5,11 +5,21 @@ Script para testar conexão MySQL e criar tabelas
 
 import pymysql
 import sys
+import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Carregar variáveis de ambiente do .env
+env_path = Path("api/.env")
+if env_path.exists():
+    load_dotenv(env_path)
+else:
+    # Tentar carregar da raiz
+    load_dotenv()
 
 # Configuração MySQL (HostGator)
 # ⚠️ IMPORTANTE: Configure via variáveis de ambiente ou edite aqui localmente
 # Não commite este arquivo com credenciais reais!
-import os
 MYSQL_HOST = os.getenv("MYSQL_HOST", "")
 MYSQL_PORT = int(os.getenv("MYSQL_PORT", "3306"))
 MYSQL_DATABASE = os.getenv("MYSQL_DATABASE", "")
