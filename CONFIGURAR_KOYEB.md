@@ -46,29 +46,28 @@ python api/app.py
 
 ---
 
-### **4. Variáveis de Ambiente**
+### **4. Variáveis de Ambiente** ⚠️ **OBRIGATÓRIO**
 
-Clique em **"Environment Variables"** e adicione:
+⚠️ **IMPORTANTE**: As variáveis do `koyeb.toml` **NÃO são aplicadas automaticamente**. Você **DEVE** adicioná-las manualmente no dashboard!
 
-```env
-DB_TYPE=mysql
-MYSQL_HOST=108.179.252.54
-MYSQL_PORT=3306
-MYSQL_DATABASE=scpmtc84_api
-MYSQL_USER=scpmtc84_api
-MYSQL_PASSWORD=nQT-8gW%-qCY
-```
+1. No dashboard do Koyeb, vá em **"Settings"** → **"Environment"** (ou **"Environment Variables"**)
+2. Clique em **"Add Environment Variable"** (ou **"+"**)
+3. Adicione **uma por uma** as seguintes variáveis:
 
-**Como adicionar:**
-1. Clique em **"Add Environment Variable"**
-2. Adicione cada variável uma por uma:
-   - Key: `DB_TYPE`, Value: `mysql`
-   - Key: `MYSQL_HOST`, Value: `108.179.252.54`
-   - Key: `MYSQL_PORT`, Value: `3306`
-   - Key: `MYSQL_DATABASE`, Value: `scpmtc84_api`
-   - Key: `MYSQL_USER`, Value: `scpmtc84_api`
-   - Key: `MYSQL_PASSWORD`, Value: `nQT-8gW%-qCY`
-3. Clique em **"Save"** após cada variável
+   | Key | Value |
+   |-----|-------|
+   | `DB_TYPE` | `mysql` |
+   | `MYSQL_HOST` | `108.179.252.54` |
+   | `MYSQL_PORT` | `3306` |
+   | `MYSQL_DATABASE` | `scpmtc84_api` |
+   | `MYSQL_USER` | `scpmtc84_api` |
+   | `MYSQL_PASSWORD` | `nQT-8gW%-qCY` |
+
+4. Clique em **"Save"** após cada variável
+
+**Total: 6 variáveis de ambiente**
+
+📖 **Guia detalhado**: Veja `ADICIONAR_VARIAVEIS_KOYEB.md` para instruções passo a passo com screenshots.
 
 ---
 
