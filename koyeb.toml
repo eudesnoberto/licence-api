@@ -1,8 +1,7 @@
 [build]
-builder = "docker"
-# OU use buildpack sem build command customizado:
-# builder = "nixpacks"
-# (remova qualquer build command customizado no dashboard)
+# Se usar buildpack, o Koyeb procura requirements.txt na raiz
+# Se usar Docker, use o Dockerfile
+builder = "nixpacks"
 
 [run]
 command = "cd api && python app.py"
