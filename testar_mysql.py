@@ -7,11 +7,14 @@ import pymysql
 import sys
 
 # Configuração MySQL (HostGator)
-MYSQL_HOST = "108.179.252.54"
-MYSQL_PORT = 3306
-MYSQL_DATABASE = "scpmtc84_api"
-MYSQL_USER = "scpmtc84_api"
-MYSQL_PASSWORD = "nQT-8gW%-qCY"
+# ⚠️ IMPORTANTE: Configure via variáveis de ambiente ou edite aqui localmente
+# Não commite este arquivo com credenciais reais!
+import os
+MYSQL_HOST = os.getenv("MYSQL_HOST", "")
+MYSQL_PORT = int(os.getenv("MYSQL_PORT", "3306"))
+MYSQL_DATABASE = os.getenv("MYSQL_DATABASE", "")
+MYSQL_USER = os.getenv("MYSQL_USER", "")
+MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "")
 
 def test_connection():
     """Testa conexão MySQL"""
