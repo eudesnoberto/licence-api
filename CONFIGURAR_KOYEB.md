@@ -57,11 +57,13 @@ python api/app.py
    | Key | Value |
    |-----|-------|
    | `DB_TYPE` | `mysql` |
-   | `MYSQL_HOST` | `108.179.252.54` |
+   | `MYSQL_HOST` | `SEU_HOST_AQUI` |
    | `MYSQL_PORT` | `3306` |
-   | `MYSQL_DATABASE` | `scpmtc84_api` |
-   | `MYSQL_USER` | `scpmtc84_api` |
-   | `MYSQL_PASSWORD` | `nQT-8gW%-qCY` |
+   | `MYSQL_DATABASE` | `SEU_DATABASE_AQUI` |
+   | `MYSQL_USER` | `SEU_USUARIO_AQUI` |
+   | `MYSQL_PASSWORD` | `SUA_SENHA_AQUI` |
+   
+   ⚠️ **IMPORTANTE**: Substitua os valores acima pelas suas credenciais reais do MySQL.
 
 4. Clique em **"Save"** após cada variável
 

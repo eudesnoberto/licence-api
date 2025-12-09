@@ -8,12 +8,16 @@ Migrar de SQLite local para MySQL remoto no HostGator, permitindo que **todos os
 
 ## 📋 Informações do Banco
 
-- **Host**: `108.179.252.54`
+⚠️ **IMPORTANTE**: Configure suas credenciais MySQL via variáveis de ambiente ou arquivo `.env` (não versionado).
+
+- **Host**: `SEU_HOST_AQUI`
 - **Porta**: `3306`
-- **Database**: `scpmtc84_api`
-- **Usuário**: `scpmtc84_api`
-- **Senha**: `nQT-8gW%-qCY`
+- **Database**: `SEU_DATABASE_AQUI`
+- **Usuário**: `SEU_USUARIO_AQUI`
+- **Senha**: `SUA_SENHA_AQUI`
 - **Status**: ✅ Liberado para acesso remoto
+
+📖 **Veja `env.example` para template de configuração.**
 
 ---
 
@@ -44,11 +48,12 @@ Crie ou edite o arquivo `.env` na pasta `api/`:
 DB_TYPE=mysql
 
 # Configuração MySQL (HostGator)
-MYSQL_HOST=108.179.252.54
+# ⚠️ IMPORTANTE: Substitua pelos valores reais do seu banco
+MYSQL_HOST=SEU_HOST_AQUI
 MYSQL_PORT=3306
-MYSQL_DATABASE=scpmtc84_api
-MYSQL_USER=scpmtc84_api
-MYSQL_PASSWORD=nQT-8gW%-qCY
+MYSQL_DATABASE=SEU_DATABASE_AQUI
+MYSQL_USER=SEU_USUARIO_AQUI
+MYSQL_PASSWORD=SUA_SENHA_AQUI
 ```
 
 ---
@@ -89,11 +94,13 @@ Para cada servidor (Render, Koyeb), adicione as variáveis de ambiente:
 1. Dashboard → Seu serviço → Environment
 2. Adicione:
    - `DB_TYPE=mysql`
-   - `MYSQL_HOST=108.179.252.54`
+   - `MYSQL_HOST=SEU_HOST_AQUI`
    - `MYSQL_PORT=3306`
-   - `MYSQL_DATABASE=scpmtc84_api`
-   - `MYSQL_USER=scpmtc84_api`
-   - `MYSQL_PASSWORD=nQT-8gW%-qCY`
+   - `MYSQL_DATABASE=SEU_DATABASE_AQUI`
+   - `MYSQL_USER=SEU_USUARIO_AQUI`
+   - `MYSQL_PASSWORD=SUA_SENHA_AQUI`
+   
+   ⚠️ **IMPORTANTE**: Substitua pelos valores reais do seu banco MySQL.
 
 #### **Koyeb:**
 1. Dashboard → Seu serviço → Settings → Environment Variables
@@ -130,12 +137,14 @@ Execute este script para testar:
 import pymysql
 
 try:
+    # ⚠️ IMPORTANTE: Use variáveis de ambiente ou configure aqui localmente
+    import os
     conn = pymysql.connect(
-        host="108.179.252.54",
-        port=3306,
-        user="scpmtc84_api",
-        password="nQT-8gW%-qCY",
-        database="scpmtc84_api",
+        host=os.getenv("MYSQL_HOST", "SEU_HOST_AQUI"),
+        port=int(os.getenv("MYSQL_PORT", "3306")),
+        user=os.getenv("MYSQL_USER", "SEU_USUARIO_AQUI"),
+        password=os.getenv("MYSQL_PASSWORD", "SUA_SENHA_AQUI"),
+        database=os.getenv("MYSQL_DATABASE", "SEU_DATABASE_AQUI"),
         charset='utf8mb4'
     )
     print("✅ Conexão MySQL bem-sucedida!")
@@ -180,7 +189,7 @@ pip install pymysql
 - Verifique credenciais no `.env`
 
 ### **Erro: "Database does not exist"**
-- Crie o banco `scpmtc84_api` no HostGator
+- Crie o banco no HostGator (nome definido em `MYSQL_DATABASE`)
 - Ou ajuste `MYSQL_DATABASE` no `.env`
 
 ---

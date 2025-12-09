@@ -31,7 +31,7 @@ Adicione **uma por uma** as seguintes variáveis:
 
 #### **Variável 2:**
 - **Key**: `MYSQL_HOST`
-- **Value**: `108.179.252.54`
+- **Value**: `SEU_HOST_AQUI` (substitua pelo host real)
 - Clique em **"Save"** ou **"Add"**
 
 #### **Variável 3:**
@@ -41,17 +41,17 @@ Adicione **uma por uma** as seguintes variáveis:
 
 #### **Variável 4:**
 - **Key**: `MYSQL_DATABASE`
-- **Value**: `scpmtc84_api`
+- **Value**: `SEU_DATABASE_AQUI` (substitua pelo database real)
 - Clique em **"Save"** ou **"Add"**
 
 #### **Variável 5:**
 - **Key**: `MYSQL_USER`
-- **Value**: `scpmtc84_api`
+- **Value**: `SEU_DATABASE_AQUI` (substitua pelo database real)
 - Clique em **"Save"** ou **"Add"**
 
 #### **Variável 6:**
 - **Key**: `MYSQL_PASSWORD`
-- **Value**: `nQT-8gW%-qCY`
+- **Value**: `SUA_SENHA_AQUI` (substitua pela senha real)
 - Clique em **"Save"** ou **"Add"**
 
 ---
@@ -61,11 +61,11 @@ Adicione **uma por uma** as seguintes variáveis:
 Após adicionar todas, você deve ter:
 
 - [ ] `DB_TYPE` = `mysql`
-- [ ] `MYSQL_HOST` = `108.179.252.54`
+- [ ] `MYSQL_HOST` = `SEU_HOST_AQUI`
 - [ ] `MYSQL_PORT` = `3306`
-- [ ] `MYSQL_DATABASE` = `scpmtc84_api`
-- [ ] `MYSQL_USER` = `scpmtc84_api`
-- [ ] `MYSQL_PASSWORD` = `nQT-8gW%-qCY`
+- [ ] `MYSQL_DATABASE` = `SEU_DATABASE_AQUI`
+- [ ] `MYSQL_USER` = `SEU_USUARIO_AQUI`
+- [ ] `MYSQL_PASSWORD` = `SUA_SENHA_AQUI`
 
 **Total: 6 variáveis**
 
