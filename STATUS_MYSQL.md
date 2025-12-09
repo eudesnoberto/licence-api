@@ -42,11 +42,12 @@ Crie/edite o arquivo `api/.env`:
 
 ```env
 DB_TYPE=mysql
-MYSQL_HOST=108.179.252.54
+# ⚠️ IMPORTANTE: Substitua pelos valores reais do seu banco MySQL
+MYSQL_HOST=SEU_HOST_AQUI
 MYSQL_PORT=3306
-MYSQL_DATABASE=scpmtc84_api
-MYSQL_USER=scpmtc84_api
-MYSQL_PASSWORD=nQT-8gW%-qCY
+MYSQL_DATABASE=SEU_DATABASE_AQUI
+MYSQL_USER=SEU_USUARIO_AQUI
+MYSQL_PASSWORD=SUA_SENHA_AQUI
 ```
 
 ### **2. Instalar Dependências**
@@ -78,11 +79,12 @@ Adicione as variáveis de ambiente no painel:
 
 ```
 DB_TYPE=mysql
-MYSQL_HOST=108.179.252.54
+# ⚠️ IMPORTANTE: Substitua pelos valores reais do seu banco MySQL
+MYSQL_HOST=SEU_HOST_AQUI
 MYSQL_PORT=3306
-MYSQL_DATABASE=scpmtc84_api
-MYSQL_USER=scpmtc84_api
-MYSQL_PASSWORD=nQT-8gW%-qCY
+MYSQL_DATABASE=SEU_DATABASE_AQUI
+MYSQL_USER=SEU_USUARIO_AQUI
+MYSQL_PASSWORD=SUA_SENHA_AQUI
 ```
 
 ---
