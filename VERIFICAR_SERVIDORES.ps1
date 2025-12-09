@@ -17,7 +17,7 @@ $servers = @(
     },
     @{
         Name = "Koyeb (Backup 2)"
-        URL = "https://shiny-jemmie-easyplayrockola-6d2e5ef0.koyeb.app"
+        URL = "https://working-cecilla-easyplayrockola-9b0c7243.koyeb.app"
     }
 )
 
