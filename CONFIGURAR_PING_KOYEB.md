@@ -26,7 +26,7 @@ Configurar monitoramento e keep-alive para o servidor Koyeb, garantindo que ele 
 2. **Preencha o formulário:**
    - **Monitor Type**: Selecione **"HTTP(s)"**
    - **Friendly Name**: `License API Koyeb`
-   - **URL (or IP)**: `https://working-cecilla-easyplayrockola-9b0c7243.koyeb.app/ping`
+   - **URL (or IP)**: `https://thick-beverly-easyplayrockola-37418eab.koyeb.app/ping`
      - ⚠️ **Substitua pela URL real do seu app Koyeb**
    - **Monitoring Interval**: Selecione **"5 minutes"** (mínimo no plano free)
    - **Alert Contacts**: (Opcional) Adicione seu email para receber alertas
@@ -60,7 +60,7 @@ Configure monitores para **todos os servidores**:
 
 ### **Monitor 2: Koyeb**
 - **Friendly Name**: `License API Koyeb`
-- **URL**: `https://working-cecilla-easyplayrockola-9b0c7243.koyeb.app/ping`
+- **URL**: `https://thick-beverly-easyplayrockola-37418eab.koyeb.app/ping`
 
 ### **Monitor 3: Servidor Principal (se aplicável)**
 - **Friendly Name**: `License API Principal`
@@ -74,7 +74,7 @@ Antes de configurar o monitor, teste se o endpoint está funcionando:
 
 ```bash
 # Teste do ping
-curl https://working-cecilla-easyplayrockola-9b0c7243.koyeb.app/ping
+curl https://thick-beverly-easyplayrockola-37418eab.koyeb.app/ping
 ```
 
 **Resposta esperada:**
@@ -160,7 +160,7 @@ Para monitoramento completo, configure:
 Atualize estas URLs conforme necessário:
 
 - **Render**: `https://licence-api-6evg.onrender.com/ping`
-- **Koyeb**: `https://working-cecilla-easyplayrockola-9b0c7243.koyeb.app/ping`
+- **Koyeb**: `https://thick-beverly-easyplayrockola-37418eab.koyeb.app/ping`
 - **Principal**: `https://api.fartgreen.fun/ping` (se aplicável)
 
 ---

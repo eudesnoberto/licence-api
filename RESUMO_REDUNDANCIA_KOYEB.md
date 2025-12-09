@@ -12,7 +12,7 @@ Servidor Koyeb adicionado como **terceiro servidor de redundância**, garantindo
 |---|----------|-----|--------|-------|
 | 1 | **Principal** | `https://api.fartgreen.fun` | ⚠️ Temporário | Erro 1033 (pode estar offline) |
 | 2 | **Render** | `https://licence-api-zsbg.onrender.com` | ✅ Online | ✅ Funcionando |
-| 3 | **Koyeb** | `https://shiny-jemmie-easyplayrockola-6d2e5ef0.koyeb.app` | ✅ Online | ✅ Funcionando |
+| 3 | **Koyeb** | `https://thick-beverly-easyplayrockola-37418eab.koyeb.app` | ✅ Online | ✅ Funcionando |
 
 ---
 
@@ -72,7 +72,7 @@ Adicione o Koyeb ao UptimeRobot:
 
 1. Acesse: https://uptimerobot.com
 2. Adicione novo monitor:
-   - **URL**: `https://shiny-jemmie-easyplayrockola-6d2e5ef0.koyeb.app/ping`
+   - **URL**: `https://thick-beverly-easyplayrockola-37418eab.koyeb.app/ping`
    - **Interval**: 5 minutes
 
 ### **3. Testar Redundância**
@@ -97,7 +97,7 @@ Adicione o Koyeb ao UptimeRobot:
    ↓ (se falhar)
 2. Render (licence-api-zsbg.onrender.com)
    ↓ (se falhar)
-3. Koyeb (shiny-jemmie-easyplayrockola-6d2e5ef0.koyeb.app)
+3. Koyeb (thick-beverly-easyplayrockola-37418eab.koyeb.app)
    ↓ (se todos falharem)
 4. Modo Offline (7 dias de graça)
 ```

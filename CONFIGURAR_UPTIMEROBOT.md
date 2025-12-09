@@ -44,7 +44,7 @@ Manter o servidor Render ativo fazendo ping a cada 5 minutos, evitando que ele "
 2. **Preencha o formulário:**
    - **Monitor Type**: Selecione **"HTTP(s)"**
    - **Friendly Name**: `License API Koyeb`
-   - **URL (or IP)**: `https://working-cecilla-easyplayrockola-9b0c7243.koyeb.app/ping`
+   - **URL (or IP)**: `https://thick-beverly-easyplayrockola-37418eab.koyeb.app/ping`
      - ⚠️ **Substitua pela URL real do seu app Koyeb**
    - **Monitoring Interval**: Selecione **"5 minutes"**
    - **Alert Contacts**: (Opcional) Adicione seu email

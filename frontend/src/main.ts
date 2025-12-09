@@ -42,7 +42,7 @@ function loadApiServers(): string[] {
     return [
       'https://api.fartgreen.fun',                                    // Servidor Principal
       'https://licence-api-6evg.onrender.com',                         // Backup 1 (Render)
-      'https://shiny-jemmie-easyplayrockola-6d2e5ef0.koyeb.app',      // Backup 2 (Koyeb)
+      'https://thick-beverly-easyplayrockola-37418eab.koyeb.app',      // Backup 2 (Koyeb)
     ]
   }
   

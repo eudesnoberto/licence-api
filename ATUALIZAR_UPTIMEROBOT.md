@@ -45,7 +45,7 @@ Após salvar, aguarde alguns minutos e verifique:
 - **Endpoint**: `/ping` ou `/health`
 
 ### **Servidor Backup (Koyeb)**
-- **URL**: `https://shiny-jemmie-easyplayrockola-6d2e5ef0.koyeb.app/ping`
+- **URL**: `https://thick-beverly-easyplayrockola-37418eab.koyeb.app/ping`
 - **Status**: ⚠️ Verificar
 
 ### **Servidor Principal (Cloudflare)**

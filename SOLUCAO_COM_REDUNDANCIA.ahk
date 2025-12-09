@@ -19,7 +19,7 @@
 g_LicenseAPI_Servers := []
 g_LicenseAPI_Servers[1] := "https://api.fartgreen.fun"                     ; Servidor Principal
 g_LicenseAPI_Servers[2] := "https://licence-api-6evg.onrender.com"         ; Backup 1 (Render)
-g_LicenseAPI_Servers[3] := "https://shiny-jemmie-easyplayrockola-6d2e5ef0.koyeb.app"  ; Backup 2 (Koyeb)
+g_LicenseAPI_Servers[3] := "https://thick-beverly-easyplayrockola-37418eab.koyeb.app"  ; Backup 2 (Koyeb)
 
 ; OU MÉTODO 2: Servidor único (compatibilidade)
 ; Descomente se quiser usar apenas um servidor:

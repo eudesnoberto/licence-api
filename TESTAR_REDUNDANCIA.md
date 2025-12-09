@@ -4,7 +4,7 @@
 
 1. **Servidor Principal**: `https://api.fartgreen.fun`
 2. **Backup 1 (Render)**: `https://licence-api-zsbg.onrender.com`
-3. **Backup 2 (Koyeb)**: `https://shiny-jemmie-easyplayrockola-6d2e5ef0.koyeb.app`
+3. **Backup 2 (Koyeb)**: `https://thick-beverly-easyplayrockola-37418eab.koyeb.app`
 
 ---
 

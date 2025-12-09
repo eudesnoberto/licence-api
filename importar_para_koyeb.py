@@ -13,7 +13,7 @@ import sys
 # Configuração
 LOCAL_DB_PATH = Path("api/license.db")
 BACKUP_JSON = "backup_banco_local.json"
-KOYEB_API_URL = "https://shiny-jemmie-easyplayrockola-6d2e5ef0.koyeb.app"
+KOYEB_API_URL = "https://thick-beverly-easyplayrockola-37418eab.koyeb.app"
 
 # Credenciais do admin (ajuste se necessário)
 # Se não funcionar, o script pedirá as credenciais

@@ -26,7 +26,7 @@
 ---
 
 ### **3. Koyeb (Backup 2)** ✅ ONLINE (Rápido)
-- **URL**: `https://shiny-jemmie-easyplayrockola-6d2e5ef0.koyeb.app`
+- **URL**: `https://thick-beverly-easyplayrockola-37418eab.koyeb.app`
 - **/health**: ✅ HTTP 200 (OK)
 - **/ping**: ✅ HTTP 200 (OK)
 - **Tempo de resposta**: ~1 segundo

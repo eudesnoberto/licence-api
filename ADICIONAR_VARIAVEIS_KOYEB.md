@@ -12,7 +12,7 @@ As variáveis de ambiente **NÃO** são aplicadas automaticamente do `koyeb.toml
 
 1. Acesse: https://app.koyeb.com
 2. Faça login
-3. Vá no seu app: `working-cecilla-easyplayrockola-9b0c7243.koyeb.app`
+3. Vá no seu app: `thick-beverly-easyplayrockola-37418eab.koyeb.app`
 4. Clique em **"Settings"** (ou **"Configure"**)
 
 ### **2. Adicionar Variáveis de Ambiente**
