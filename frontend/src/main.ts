@@ -476,6 +476,24 @@ async function forgotPassword(email: string): Promise<void> {
   }
 }
 
+async function getResetTokenInfo(token: string): Promise<{ expires_at: string; remaining_seconds: number }> {
+  const res = await fetchWithFallback(`/auth/reset-password?token=${encodeURIComponent(token)}`, {
+    method: 'GET',
+  })
+  if (!res.ok) {
+    const text = await res.text()
+    let errorMessage = text
+    try {
+      const json = JSON.parse(text)
+      errorMessage = json.error || text
+    } catch {
+      // Se não for JSON, usar o texto direto
+    }
+    throw new Error(errorMessage || 'Erro ao verificar token')
+  }
+  return res.json()
+}
+
 async function resetPassword(token: string, newPassword: string): Promise<void> {
   const res = await fetchWithFallback('/auth/reset-password', {
     method: 'POST',
@@ -1272,12 +1290,53 @@ function showForgotPassword() {
   })
 }
 
-function showResetPassword(token: string) {
+async function showResetPassword(token: string) {
   const app = document.querySelector<HTMLDivElement>('#app')
   if (!app) return
   
-  // Calcular tempo de expiração (30 minutos a partir de agora)
-  const expirationTime = Date.now() + (30 * 60 * 1000) // 30 minutos em milissegundos
+  // Mostrar loading enquanto busca informações do token
+  app.innerHTML = `
+    <main class="app login-card">
+      <div class="app-header">
+        <h1>Redefinir Senha</h1>
+      </div>
+      <div class="app-content">
+        <div style="text-align: center; padding: 2rem;">
+          <div class="loading-spinner" style="margin: 0 auto 1rem;"></div>
+          <p style="color: #667eea; font-weight: 500;">Verificando token...</p>
+        </div>
+      </div>
+    </main>
+  `
+  
+  let expirationTime: number
+  try {
+    // Buscar informações do token do backend
+    const tokenInfo = await getResetTokenInfo(token)
+    
+    // Calcular tempo de expiração baseado no tempo restante retornado pelo servidor
+    expirationTime = Date.now() + (tokenInfo.remaining_seconds * 1000)
+  } catch (err: any) {
+    // Se houver erro ao buscar informações do token, mostrar erro e redirecionar
+    app.innerHTML = `
+      <main class="app login-card">
+        <div class="app-header">
+          <h1>Erro</h1>
+        </div>
+        <div class="app-content">
+          <div class="login-error-message" style="display: flex;">
+            <div class="error-icon">⚠️</div>
+            <div class="error-content">
+              <div class="error-title">Token inválido ou expirado</div>
+              <div class="error-text">${err?.message || 'O token de recuperação não é válido ou já expirou.'}</div>
+            </div>
+          </div>
+          <button onclick="window.location.hash = '/'" style="width: 100%; margin-top: 1rem; padding: 0.875rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Voltar para Login</button>
+        </div>
+      </main>
+    `
+    return
+  }
   
   app.innerHTML = `
     <main class="app login-card">
@@ -2541,7 +2600,7 @@ async function router() {
     const params = new URLSearchParams(window.location.hash.split('?')[1])
     const token = params.get('token')
     if (token) {
-      showResetPassword(token)
+      await showResetPassword(token)
     } else {
       showLogin()
     }

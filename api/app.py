@@ -713,13 +713,25 @@ def admin_login():
     with get_conn() as conn:
         cur = get_cursor(conn)
         # Primeiro tenta admin_users
-        cur.execute(
-            "SELECT password_hash, must_change_password FROM admin_users WHERE username = ? LIMIT 1",
-            (username,),
-        )
+        if USE_MYSQL:
+            cur.execute(
+                "SELECT password_hash, must_change_password FROM admin_users WHERE username = %s LIMIT 1",
+                (username,),
+            )
+        else:
+            cur.execute(
+                "SELECT password_hash, must_change_password FROM admin_users WHERE username = ? LIMIT 1",
+                (username,),
+            )
         row = cur.fetchone()
         if row:
-            pwd_hash, must_change = row[0], int(row[1])
+            # Compatível com MySQL DictCursor e SQLite Row
+            if USE_MYSQL and hasattr(row, 'keys'):
+                pwd_hash, must_change = row['password_hash'], int(row['must_change_password'])
+            else:
+                pwd_hash = row[0] if isinstance(row, tuple) else row['password_hash']
+                must_change = int(row[1] if isinstance(row, tuple) else row['must_change_password'])
+            
             if _admin_hash_password(password) == pwd_hash:
                 token = _make_admin_token(username, "admin")
                 return json_response({
@@ -729,13 +741,25 @@ def admin_login():
                 })
         
         # Se não encontrou em admin_users, tenta users
-        cur.execute(
-            "SELECT password_hash, role FROM users WHERE username = ? LIMIT 1",
-            (username,),
-        )
+        if USE_MYSQL:
+            cur.execute(
+                "SELECT password_hash, role FROM users WHERE username = %s LIMIT 1",
+                (username,),
+            )
+        else:
+            cur.execute(
+                "SELECT password_hash, role FROM users WHERE username = ? LIMIT 1",
+                (username,),
+            )
         row = cur.fetchone()
         if row:
-            pwd_hash, role = row[0], row[1]
+            # Compatível com MySQL DictCursor e SQLite Row
+            if USE_MYSQL and hasattr(row, 'keys'):
+                pwd_hash, role = row['password_hash'], row['role']
+            else:
+                pwd_hash = row[0] if isinstance(row, tuple) else row['password_hash']
+                role = row[1] if isinstance(row, tuple) else row['role']
+            
             if _user_hash_password(password) == pwd_hash:
                 token = _make_admin_token(username, role or "user")
                 return json_response({
@@ -1415,6 +1439,67 @@ def test_email():
         return json_response({"error": f"Erro ao enviar email de teste: {str(e)}"}, 500)
 
 
+@app.route("/auth/reset-password", methods=["GET"])
+def get_reset_token_info():
+    """Retorna informações sobre o token de recuperação (tempo de expiração)."""
+    token = request.args.get("token", "").strip()
+    
+    if not token:
+        return json_response({"error": "Token é obrigatório."}, 400)
+    
+    with get_conn() as conn:
+        cur = get_cursor(conn)
+        # Buscar token e tempo de expiração
+        if USE_MYSQL:
+            cur.execute(
+                "SELECT expires_at FROM password_resets WHERE token = %s LIMIT 1",
+                (token,),
+            )
+        else:
+            cur.execute(
+                "SELECT expires_at FROM password_resets WHERE token = ? LIMIT 1",
+                (token,),
+            )
+        row = cur.fetchone()
+        
+        if not row:
+            return json_response({"error": "Token inválido."}, 400)
+        
+        # Obter expires_at (compatível com MySQL DictCursor e SQLite Row)
+        from datetime import datetime
+        if USE_MYSQL and hasattr(row, 'keys'):
+            expires_at = row['expires_at']
+        else:
+            expires_at = row[0] if isinstance(row, tuple) else row['expires_at']
+        
+        # Converter para datetime se necessário
+        if isinstance(expires_at, str):
+            try:
+                # Tentar diferentes formatos de data
+                if 'T' in expires_at:
+                    expires_at = datetime.fromisoformat(expires_at.replace('Z', '+00:00'))
+                else:
+                    # Formato MySQL: 'YYYY-MM-DD HH:MM:SS'
+                    expires_at = datetime.strptime(expires_at, '%Y-%m-%d %H:%M:%S')
+            except Exception as e:
+                logger.error(f"Erro ao converter data: {e}, formato: {expires_at}")
+                return json_response({"error": "Formato de data inválido."}, 500)
+        
+        # Verificar se já expirou
+        now = datetime.utcnow()
+        if expires_at <= now:
+            return json_response({"error": "Token expirado."}, 400)
+        
+        # Calcular tempo restante em segundos
+        remaining_seconds = int((expires_at - now).total_seconds())
+        
+        return json_response({
+            "ok": True,
+            "expires_at": expires_at.isoformat() if isinstance(expires_at, datetime) else str(expires_at),
+            "remaining_seconds": remaining_seconds,
+        })
+
+
 @app.route("/auth/reset-password", methods=["POST"])
 def reset_password():
     """Redefine a senha usando token de recuperação."""
@@ -1466,30 +1551,65 @@ def reset_password():
             username = row[0] if isinstance(row, tuple) else row['username']
             expires_at = row[1] if isinstance(row, tuple) else row['expires_at']
         
-        # Atualizar senha
+        # IMPORTANTE: Deletar o token ANTES de atualizar a senha para evitar uso múltiplo
+        # Isso garante que mesmo se houver erro depois, o token já foi invalidado
         if USE_MYSQL:
-            cur.execute("SELECT id FROM users WHERE username = %s LIMIT 1", (username,))
-        else:
-            cur.execute("SELECT id FROM users WHERE username = ? LIMIT 1", (username,))
-        user_row = cur.fetchone()
-        if not user_row:
-            return json_response({"error": "Usuário não encontrado."}, 404)
-        
-        if USE_MYSQL:
-            cur.execute(
-                "UPDATE users SET password_hash = %s WHERE username = %s",
-                (_user_hash_password(new_password), username),
-            )
             cur.execute("DELETE FROM password_resets WHERE token = %s", (token,))
         else:
-            cur.execute(
-                "UPDATE users SET password_hash = ? WHERE username = ?",
-                (_user_hash_password(new_password), username),
-            )
             cur.execute("DELETE FROM password_resets WHERE token = ?", (token,))
+        
+        # Verificar se usuário existe em admin_users ou users
+        user_found = False
+        is_admin = False
+        
+        if USE_MYSQL:
+            cur.execute("SELECT id FROM admin_users WHERE username = %s LIMIT 1", (username,))
+        else:
+            cur.execute("SELECT id FROM admin_users WHERE username = ? LIMIT 1", (username,))
+        admin_row = cur.fetchone()
+        
+        if admin_row:
+            # Usuário está em admin_users - atualizar lá
+            is_admin = True
+            user_found = True
+            if USE_MYSQL:
+                cur.execute(
+                    "UPDATE admin_users SET password_hash = %s, must_change_password = 0 WHERE username = %s",
+                    (_admin_hash_password(new_password), username),
+                )
+            else:
+                cur.execute(
+                    "UPDATE admin_users SET password_hash = ?, must_change_password = 0 WHERE username = ?",
+                    (_admin_hash_password(new_password), username),
+                )
+        else:
+            # Verificar em users
+            if USE_MYSQL:
+                cur.execute("SELECT id FROM users WHERE username = %s LIMIT 1", (username,))
+            else:
+                cur.execute("SELECT id FROM users WHERE username = ? LIMIT 1", (username,))
+            user_row = cur.fetchone()
+            
+            if user_row:
+                user_found = True
+                if USE_MYSQL:
+                    cur.execute(
+                        "UPDATE users SET password_hash = %s WHERE username = %s",
+                        (_user_hash_password(new_password), username),
+                    )
+                else:
+                    cur.execute(
+                        "UPDATE users SET password_hash = ? WHERE username = ?",
+                        (_user_hash_password(new_password), username),
+                    )
+        
+        if not user_found:
+            conn.rollback()  # Reverter a deleção do token se usuário não foi encontrado
+            return json_response({"error": "Usuário não encontrado."}, 404)
+        
         conn.commit()
         
-        logger.info(f"Senha redefinida para usuário {username} via token")
+        logger.info(f"Senha redefinida para usuário {username} via token (tipo: {'admin' if is_admin else 'user'})")
         return json_response({"ok": True, "message": "Senha redefinida com sucesso."})
 
 
