@@ -1703,7 +1703,8 @@ td {
 }
 
 /* Loading spinner para formulários */
-#forgot-loading .loading-spinner {
+#forgot-loading .loading-spinner,
+#login-loading .loading-spinner {
   width: 40px;
   height: 40px;
   border: 3px solid rgba(102, 126, 234, 0.2);
@@ -1711,6 +1712,45 @@ td {
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin: 0 auto 1rem;
+}
+
+/* Mensagem de erro de login */
+.login-error-message {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  border: 2px solid #ef4444;
+  border-radius: 12px;
+  margin-bottom: 1rem;
+  animation: slideIn 0.3s ease-out;
+}
+
+.error-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+}
+
+.error-content {
+  flex: 1;
+}
+
+.error-title {
+  font-weight: 700;
+  color: #991b1b;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.25rem;
+}
+
+.error-text {
+  color: #7f1d1d;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  font-weight: 500;
 }
 
 @media (max-width: 640px) {
@@ -1721,4 +1761,184 @@ td {
     min-width: auto;
     max-width: none;
   }
+}
+
+/* Validação de Senha - Barra de Força */
+.password-strength-container {
+  margin-top: 0.5rem;
+}
+
+.password-strength-bar {
+  width: 100%;
+  height: 6px;
+  background: #e5e7eb;
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+}
+
+.password-strength-fill {
+  height: 100%;
+  width: 0%;
+  background: #ef4444;
+  border-radius: 3px;
+  transition: all 0.3s ease;
+}
+
+.password-strength-text {
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* Validadores de Senha */
+.password-validators {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.password-validator-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+}
+
+.validator-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+
+.validator-text {
+  color: #6b7280;
+  transition: color 0.2s;
+}
+
+.password-validator-item.validator-invalid .validator-icon {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.password-validator-item.validator-invalid .validator-text {
+  color: #6b7280;
+}
+
+.password-validator-item.validator-valid .validator-icon {
+  background: #d1fae5;
+  color: #059669;
+}
+
+.password-validator-item.validator-valid .validator-text {
+  color: #059669;
+  font-weight: 600;
+}
+
+/* Indicador de Confirmação de Senha */
+.password-match-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  padding: 0.5rem;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.password-match-indicator.match-invalid {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.password-match-indicator.match-valid {
+  background: #d1fae5;
+  color: #059669;
+}
+
+.match-icon {
+  font-weight: 700;
+  font-size: 0.875rem;
+}
+
+.match-text {
+  font-weight: 600;
+}
+
+/* Botão desabilitado */
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed !important;
+  pointer-events: none;
+}
+
+/* Contador Regressivo do Token */
+.token-timer-container {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  border: 2px solid #3b82f6;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.token-timer-container.token-warning {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border-color: #f59e0b;
+  animation: pulse 1s ease-in-out infinite;
+}
+
+.token-timer-container.token-expired {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  border-color: #dc2626;
+  animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+.token-timer-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.token-timer-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+.token-timer-label {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.token-timer-countdown {
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-family: 'Courier New', monospace;
+  color: #059669;
+  letter-spacing: 2px;
+  transition: color 0.3s ease;
 }

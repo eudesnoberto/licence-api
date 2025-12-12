@@ -1257,10 +1257,10 @@ def forgot_password():
         else:
             username = row[0] if isinstance(row, tuple) else row['username']
         
-        # Gerar token de recuperação (válido por 1 hora)
+        # Gerar token de recuperação (válido por 30 minutos)
         import secrets
         reset_token = secrets.token_urlsafe(32)
-        reset_expires = (datetime.utcnow() + timedelta(hours=1)).isoformat()
+        reset_expires = (datetime.utcnow() + timedelta(minutes=30)).isoformat()
         
         # Salvar token no banco (criar tabela se necessário)
         if USE_MYSQL:
@@ -1298,7 +1298,7 @@ def forgot_password():
         # Enviar email
         try:
             from email_service import send_email
-            reset_url = f"https://fartgreen.fun/#/reset-password?token={reset_token}"
+            reset_url = f"https://www.fartgreen.fun/#/reset-password?token={reset_token}"
             html_body = f"""
             <!DOCTYPE html>
             <html lang="pt-BR">
@@ -1335,7 +1335,7 @@ def forgot_password():
                                             <code style="background: #f3f4f6; padding: 4px 8px; border-radius: 4px; font-size: 12px; word-break: break-all;">{reset_url}</code>
                                         </p>
                                         <p style="margin: 30px 0 0; color: #9ca3af; font-size: 12px; line-height: 1.6;">
-                                            Este link expira em 1 hora. Se você não solicitou esta recuperação, ignore este email.
+                                            Este link expira em 30 minutos. Se você não solicitou esta recuperação, ignore este email.
                                         </p>
                                     </td>
                                 </tr>
@@ -1425,8 +1425,22 @@ def reset_password():
     if not token or not new_password:
         return json_response({"error": "Token e nova senha são obrigatórios."}, 400)
     
+    # Validar requisitos da senha
     if len(new_password) < 6:
         return json_response({"error": "Senha deve ter no mínimo 6 caracteres."}, 400)
+    
+    import re
+    if not re.search(r'\d', new_password):
+        return json_response({"error": "Senha deve conter pelo menos um número."}, 400)
+    
+    if not re.search(r'[a-z]', new_password):
+        return json_response({"error": "Senha deve conter pelo menos uma letra minúscula."}, 400)
+    
+    if not re.search(r'[A-Z]', new_password):
+        return json_response({"error": "Senha deve conter pelo menos uma letra maiúscula."}, 400)
+    
+    if not re.search(r'[!@#$%^&*()_+\-=\[\]{};\':"\\|,.<>\/?]', new_password):
+        return json_response({"error": "Senha deve conter pelo menos um caractere especial (!@#$%^&*)."}, 400)
     
     with get_conn() as conn:
         cur = get_cursor(conn)

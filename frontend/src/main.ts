@@ -370,8 +370,21 @@ async function login(username: string, password: string): Promise<LoginResponse>
     body: JSON.stringify({ username, password }),
   })
   if (!res.ok) {
-    const text = await res.text()
-    throw new Error(text || 'Falha no login')
+    let errorMessage = 'Falha no login'
+    try {
+      const text = await res.text()
+      if (text) {
+        try {
+          const json = JSON.parse(text)
+          errorMessage = json.error || json.message || text
+        } catch {
+          errorMessage = text
+        }
+      }
+    } catch {
+      errorMessage = `Erro HTTP ${res.status}: ${res.statusText}`
+    }
+    throw new Error(errorMessage)
   }
   return res.json()
 }
@@ -828,13 +841,29 @@ function showLogin() {
         <form id="login-form">
           <div class="form-group">
             <label>Usuário</label>
-            <input name="username" required />
+            <input name="username" id="login-username" required placeholder="Digite seu usuário" autocomplete="username" />
           </div>
           <div class="form-group">
             <label>Senha</label>
-            <input name="password" type="password" required />
+            <input name="password" id="login-password" type="password" required placeholder="Digite sua senha" autocomplete="current-password" />
           </div>
-          <button type="submit">Entrar</button>
+          
+          <!-- Loading do Login -->
+          <div id="login-loading" style="display: none; text-align: center; padding: 1.5rem;">
+            <div class="loading-spinner" style="margin: 0 auto 1rem;"></div>
+            <p style="color: #667eea; font-weight: 500; margin: 0;">Autenticando...</p>
+          </div>
+          
+          <!-- Mensagem de erro -->
+          <div id="login-error" class="login-error-message" style="display: none;">
+            <div class="error-icon">⚠️</div>
+            <div class="error-content">
+              <div class="error-title">Falha na autenticação</div>
+              <div class="error-text" id="login-error-text"></div>
+            </div>
+          </div>
+          
+          <button type="submit" id="login-submit-btn" style="width: 100%;">Entrar</button>
           <div style="text-align: center; margin-top: 1rem;">
             <a href="#" id="forgot-password-link" style="color: #667eea; text-decoration: none; font-size: 0.875rem;">Esqueceu a senha?</a>
           </div>
@@ -850,34 +879,108 @@ function showLogin() {
   })
   
   const loginForm = document.querySelector<HTMLFormElement>('#login-form')
+  const loadingDiv = document.getElementById('login-loading')
+  const errorDiv = document.getElementById('login-error')
+  const errorText = document.getElementById('login-error-text')
+  const submitBtn = document.getElementById('login-submit-btn') as HTMLButtonElement
+  const usernameInput = document.getElementById('login-username') as HTMLInputElement
+  const passwordInput = document.getElementById('login-password') as HTMLInputElement
+  
+  // Função para esconder erro
+  function hideError() {
+    if (errorDiv) errorDiv.style.display = 'none'
+  }
+  
+  // Esconder erro ao digitar
+  usernameInput?.addEventListener('input', hideError)
+  passwordInput?.addEventListener('input', hideError)
+  
   loginForm?.addEventListener('submit', async (e) => {
     e.preventDefault()
+    
+    // Esconder erro anterior
+    hideError()
+    
     const fd = new FormData(loginForm)
     const username = fd.get('username')?.toString() ?? ''
     const password = fd.get('password')?.toString() ?? ''
-      try {
-        const resp = await login(username, password)
-        authToken = resp.token
-        userRole = resp.role || 'admin'
-        localStorage.setItem('adminToken', authToken)
-        localStorage.setItem('userRole', userRole)
-        if (resp.must_change_password) {
-          showChangePassword(true)
-        } else {
-          await showDashboard()
-        }
-      } catch (err: any) {
-        let errorMessage = err?.message ?? 'Falha no login'
-        
-        // Melhorar mensagem de erro de conexão
-        if (errorMessage.includes('servidores falharam') || errorMessage.includes('conectar aos servidores')) {
-          errorMessage = 'Não foi possível conectar aos servidores.\n\nOs servidores podem estar temporariamente offline.\n\nTente novamente em alguns instantes ou verifique sua conexão com a internet.'
-        } else if (errorMessage.includes('CORS') || errorMessage.includes('offline')) {
-          errorMessage = 'Erro de conexão com o servidor.\n\nO servidor pode estar temporariamente offline.\n\nTente novamente em alguns instantes.'
-        }
-        
-        alert(errorMessage)
+    
+    if (!username || !password) {
+      if (errorDiv && errorText) {
+        errorText.textContent = 'Por favor, preencha todos os campos.'
+        errorDiv.style.display = 'flex'
       }
+      return
+    }
+    
+    // Mostrar loading
+    if (loadingDiv) loadingDiv.style.display = 'block'
+    if (submitBtn) {
+      submitBtn.disabled = true
+      submitBtn.textContent = 'Autenticando...'
+    }
+    if (usernameInput) usernameInput.disabled = true
+    if (passwordInput) passwordInput.disabled = true
+    
+    try {
+      const resp = await login(username, password)
+      authToken = resp.token
+      userRole = resp.role || 'admin'
+      localStorage.setItem('adminToken', authToken)
+      localStorage.setItem('userRole', userRole)
+      
+      // Ocultar loading
+      if (loadingDiv) loadingDiv.style.display = 'none'
+      
+      if (resp.must_change_password) {
+        showChangePassword(true)
+      } else {
+        await showDashboard()
+      }
+    } catch (err: any) {
+      // Ocultar loading
+      if (loadingDiv) loadingDiv.style.display = 'none'
+      if (submitBtn) {
+        submitBtn.disabled = false
+        submitBtn.textContent = 'Entrar'
+      }
+      if (usernameInput) usernameInput.disabled = false
+      if (passwordInput) passwordInput.disabled = false
+      
+      // Processar mensagem de erro
+      let errorMessage = err?.message ?? 'Falha na autenticação'
+      
+      // Melhorar mensagens de erro
+      if (errorMessage.includes('inválidos') || errorMessage.includes('inválido') || errorMessage.includes('incorret')) {
+        errorMessage = 'Credenciais inválidas. Verifique seu usuário e senha e tente novamente.'
+      } else if (errorMessage.includes('servidores falharam') || errorMessage.includes('conectar aos servidores')) {
+        errorMessage = 'Não foi possível conectar aos servidores. Os servidores podem estar temporariamente offline. Verifique sua conexão com a internet e tente novamente.'
+      } else if (errorMessage.includes('CORS') || errorMessage.includes('offline') || errorMessage.includes('Failed to fetch')) {
+        errorMessage = 'Erro de conexão com o servidor. O servidor pode estar temporariamente indisponível. Tente novamente em alguns instantes.'
+      } else if (errorMessage.includes('timeout') || errorMessage.includes('Timeout')) {
+        errorMessage = 'Tempo de conexão esgotado. O servidor está demorando para responder. Tente novamente.'
+      } else if (errorMessage.includes('Network') || errorMessage.includes('network')) {
+        errorMessage = 'Erro de rede. Verifique sua conexão com a internet e tente novamente.'
+      }
+      
+      // Mostrar erro de forma profissional
+      if (errorDiv && errorText) {
+        errorText.textContent = errorMessage
+        errorDiv.style.display = 'flex'
+        
+        // Scroll suave para o erro
+        errorDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+      }
+      
+      // Também mostrar toast para melhor visibilidade
+      showToast(errorMessage, 'error', 6000)
+      
+      // Focar no campo de usuário após erro
+      setTimeout(() => {
+        usernameInput?.focus()
+        usernameInput?.select()
+      }, 100)
+    }
   })
 }
 
@@ -1173,6 +1276,9 @@ function showResetPassword(token: string) {
   const app = document.querySelector<HTMLDivElement>('#app')
   if (!app) return
   
+  // Calcular tempo de expiração (30 minutos a partir de agora)
+  const expirationTime = Date.now() + (30 * 60 * 1000) // 30 minutos em milissegundos
+  
   app.innerHTML = `
     <main class="app login-card">
       <div class="app-header">
@@ -1180,30 +1286,286 @@ function showResetPassword(token: string) {
       </div>
       <div class="app-content">
         <p class="subtitle">Digite sua nova senha.</p>
+        
+        <!-- Contador regressivo -->
+        <div class="token-timer-container" id="token-timer-container">
+          <div class="token-timer-icon">⏱️</div>
+          <div class="token-timer-text">
+            <span class="token-timer-label">Token expira em:</span>
+            <span class="token-timer-countdown" id="token-timer-countdown">0:30:00</span>
+          </div>
+        </div>
+        
         <form id="reset-password-form">
           <div class="form-group">
             <label>Nova senha *</label>
-            <input type="password" id="reset-new-password" required placeholder="Digite a nova senha" minlength="6" />
-            <small style="color: #6b7280; font-size: 0.75rem; margin-top: 0.25rem; display: block;">Mínimo de 6 caracteres</small>
+            <input type="password" id="reset-new-password" required placeholder="Digite a nova senha" />
+            
+            <!-- Barra de força da senha -->
+            <div class="password-strength-container" style="margin-top: 0.5rem;">
+              <div class="password-strength-bar">
+                <div class="password-strength-fill" id="password-strength-fill"></div>
+              </div>
+              <div class="password-strength-text" id="password-strength-text">Força da senha</div>
+            </div>
+            
+            <!-- Validadores de senha -->
+            <div class="password-validators" id="password-validators" style="margin-top: 0.75rem;">
+              <div class="password-validator-item" data-validator="length">
+                <span class="validator-icon">✗</span>
+                <span class="validator-text">Mínimo de 6 caracteres</span>
+              </div>
+              <div class="password-validator-item" data-validator="number">
+                <span class="validator-icon">✗</span>
+                <span class="validator-text">Pelo menos um número</span>
+              </div>
+              <div class="password-validator-item" data-validator="lowercase">
+                <span class="validator-icon">✗</span>
+                <span class="validator-text">Pelo menos uma letra minúscula</span>
+              </div>
+              <div class="password-validator-item" data-validator="uppercase">
+                <span class="validator-icon">✗</span>
+                <span class="validator-text">Pelo menos uma letra maiúscula</span>
+              </div>
+              <div class="password-validator-item" data-validator="special">
+                <span class="validator-icon">✗</span>
+                <span class="validator-text">Pelo menos um caractere especial (!@#$%^&*)</span>
+              </div>
+            </div>
           </div>
           <div class="form-group">
             <label>Confirmar nova senha *</label>
-            <input type="password" id="reset-confirm-password" required placeholder="Digite a nova senha novamente" minlength="6" />
+            <input type="password" id="reset-confirm-password" required placeholder="Digite a nova senha novamente" />
+            <div class="password-match-indicator" id="password-match-indicator" style="margin-top: 0.5rem; font-size: 0.75rem; display: none;">
+              <span class="match-icon">✗</span>
+              <span class="match-text">As senhas não coincidem</span>
+            </div>
           </div>
-          <button type="submit" style="width: 100%;">Redefinir Senha</button>
+          <button type="submit" id="reset-submit-btn" style="width: 100%;" disabled>Redefinir Senha</button>
         </form>
       </div>
     </main>
   `
   
+  // Iniciar contador regressivo
+  let countdownInterval: number | null = null
+  function startCountdown() {
+    const countdownElement = document.getElementById('token-timer-countdown')
+    const timerContainer = document.getElementById('token-timer-container')
+    
+    function updateCountdown() {
+      const now = Date.now()
+      const remaining = expirationTime - now
+      
+      if (remaining <= 0) {
+        if (countdownElement) {
+          countdownElement.textContent = '0:00:00'
+          countdownElement.style.color = '#dc2626'
+        }
+        if (timerContainer) {
+          timerContainer.classList.add('token-expired')
+        }
+        if (countdownInterval) {
+          clearInterval(countdownInterval)
+        }
+        
+        // Desabilitar formulário quando expirar
+        const submitBtn = document.getElementById('reset-submit-btn') as HTMLButtonElement
+        if (submitBtn) {
+          submitBtn.disabled = true
+          submitBtn.textContent = 'Token Expirado - Solicite um novo link'
+        }
+        
+        alert('O token de recuperação expirou. Por favor, solicite um novo link de recuperação de senha.')
+        showLogin()
+        return
+      }
+      
+      const hours = Math.floor(remaining / (1000 * 60 * 60))
+      const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60))
+      const seconds = Math.floor((remaining % (1000 * 60)) / 1000)
+      
+      const formatted = `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+      
+      if (countdownElement) {
+        countdownElement.textContent = formatted
+        
+        // Mudar cor quando estiver próximo do fim
+        if (remaining < 5 * 60 * 1000) { // Menos de 5 minutos
+          countdownElement.style.color = '#dc2626'
+          if (timerContainer) {
+            timerContainer.classList.add('token-warning')
+          }
+        } else if (remaining < 10 * 60 * 1000) { // Menos de 10 minutos
+          countdownElement.style.color = '#f59e0b'
+        } else {
+          countdownElement.style.color = '#059669'
+        }
+      }
+    }
+    
+    updateCountdown() // Atualizar imediatamente
+    countdownInterval = window.setInterval(updateCountdown, 1000) // Atualizar a cada segundo
+  }
+  
+  startCountdown()
+  
+  // Função para validar senha
+  function validatePassword(password: string) {
+    const validators = {
+      length: password.length >= 6,
+      number: /\d/.test(password),
+      lowercase: /[a-z]/.test(password),
+      uppercase: /[A-Z]/.test(password),
+      special: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password),
+    }
+    return validators
+  }
+  
+  // Função para calcular força da senha
+  function calculatePasswordStrength(password: string): { strength: number; label: string; color: string } {
+    const validators = validatePassword(password)
+    let strength = 0
+    let label = 'Muito fraca'
+    let color = '#ef4444'
+    
+    // Cada validador vale 20% (5 validadores = 100%)
+    if (validators.length) strength += 20
+    if (validators.number) strength += 20
+    if (validators.lowercase) strength += 20
+    if (validators.uppercase) strength += 20
+    if (validators.special) strength += 20
+    
+    if (strength >= 100) {
+      label = 'Muito forte'
+      color = '#10b981'
+    } else if (strength >= 80) {
+      label = 'Forte'
+      color = '#10b981'
+    } else if (strength >= 60) {
+      label = 'Média'
+      color = '#f59e0b'
+    } else if (strength >= 40) {
+      label = 'Fraca'
+      color = '#f97316'
+    }
+    
+    return { strength, label, color }
+  }
+  
+  // Função para atualizar validadores
+  function updateValidators(password: string) {
+    const validators = validatePassword(password)
+    const validatorItems = document.querySelectorAll('.password-validator-item')
+    
+    validatorItems.forEach((item) => {
+      const validatorType = item.getAttribute('data-validator')
+      const icon = item.querySelector('.validator-icon')
+      const isValid = validators[validatorType as keyof typeof validators]
+      
+      if (isValid) {
+        item.classList.add('validator-valid')
+        item.classList.remove('validator-invalid')
+        if (icon) icon.textContent = '✓'
+      } else {
+        item.classList.add('validator-invalid')
+        item.classList.remove('validator-valid')
+        if (icon) icon.textContent = '✗'
+      }
+    })
+  }
+  
+  // Função para atualizar barra de força
+  function updateStrengthBar(password: string) {
+    const { strength, label, color } = calculatePasswordStrength(password)
+    const fill = document.getElementById('password-strength-fill')
+    const text = document.getElementById('password-strength-text')
+    
+    if (fill) {
+      fill.style.width = `${strength}%`
+      fill.style.backgroundColor = color
+    }
+    
+    if (text) {
+      text.textContent = password.length > 0 ? label : 'Força da senha'
+      text.style.color = password.length > 0 ? color : '#6b7280'
+    }
+  }
+  
+  // Função para verificar se senhas coincidem
+  function checkPasswordMatch() {
+    const newPassword = (document.getElementById('reset-new-password') as HTMLInputElement)?.value || ''
+    const confirmPassword = (document.getElementById('reset-confirm-password') as HTMLInputElement)?.value || ''
+    const indicator = document.getElementById('password-match-indicator')
+    const matchIcon = indicator?.querySelector('.match-icon')
+    const matchText = indicator?.querySelector('.match-text')
+    const submitBtn = document.getElementById('reset-submit-btn') as HTMLButtonElement
+    
+    if (confirmPassword.length === 0) {
+      if (indicator) indicator.style.display = 'none'
+      return false
+    }
+    
+    if (indicator) indicator.style.display = 'flex'
+    
+    if (newPassword === confirmPassword && newPassword.length > 0) {
+      indicator?.classList.add('match-valid')
+      indicator?.classList.remove('match-invalid')
+      if (matchIcon) matchIcon.textContent = '✓'
+      if (matchText) matchText.textContent = 'As senhas coincidem'
+    } else {
+      indicator?.classList.add('match-invalid')
+      indicator?.classList.remove('match-valid')
+      if (matchIcon) matchIcon.textContent = '✗'
+      if (matchText) matchText.textContent = 'As senhas não coincidem'
+    }
+    
+    // Habilitar botão apenas se senha for válida e coincidir
+    const validators = validatePassword(newPassword)
+    const allValid = validators.length && validators.number && validators.lowercase && validators.uppercase && validators.special
+    const passwordsMatch = newPassword === confirmPassword && confirmPassword.length > 0
+    
+    // Verificar se token ainda não expirou
+    const tokenValid = Date.now() < expirationTime
+    
+    if (submitBtn) {
+      submitBtn.disabled = !(allValid && passwordsMatch && tokenValid)
+    }
+    
+    return passwordsMatch
+  }
+  
+  // Event listeners
+  const newPasswordInput = document.getElementById('reset-new-password') as HTMLInputElement
+  const confirmPasswordInput = document.getElementById('reset-confirm-password') as HTMLInputElement
+  
+  newPasswordInput?.addEventListener('input', (e) => {
+    const password = (e.target as HTMLInputElement).value
+    updateValidators(password)
+    updateStrengthBar(password)
+    checkPasswordMatch()
+  })
+  
+  confirmPasswordInput?.addEventListener('input', () => {
+    checkPasswordMatch()
+  })
+  
   const resetForm = document.querySelector<HTMLFormElement>('#reset-password-form')
   resetForm?.addEventListener('submit', async (e) => {
     e.preventDefault()
-    const newPassword = (document.getElementById('reset-new-password') as HTMLInputElement)?.value || ''
-    const confirmPassword = (document.getElementById('reset-confirm-password') as HTMLInputElement)?.value || ''
+    const newPassword = newPasswordInput?.value || ''
+    const confirmPassword = confirmPasswordInput?.value || ''
     
-    if (newPassword.length < 6) {
-      alert('A nova senha deve ter no mínimo 6 caracteres!')
+    // Verificar se token ainda é válido
+    if (Date.now() >= expirationTime) {
+      alert('O token de recuperação expirou. Por favor, solicite um novo link de recuperação de senha.')
+      showLogin()
+      return
+    }
+    
+    const validators = validatePassword(newPassword)
+    if (!validators.length || !validators.number || !validators.lowercase || !validators.uppercase || !validators.special) {
+      alert('A senha não atende aos requisitos mínimos!\n\nRequisitos:\n- Mínimo de 6 caracteres\n- Pelo menos um número\n- Pelo menos uma letra minúscula\n- Pelo menos uma letra maiúscula\n- Pelo menos um caractere especial')
       return
     }
     
@@ -1213,11 +1575,24 @@ function showResetPassword(token: string) {
     }
     
     try {
+      // Parar contador
+      if (countdownInterval) {
+        clearInterval(countdownInterval)
+      }
+      
       await resetPassword(token, newPassword)
       alert('Senha redefinida com sucesso! Você já pode fazer login.')
       showLogin()
     } catch (err: any) {
-      alert(err?.message ?? 'Erro ao redefinir senha')
+      const errorMsg = err?.message ?? 'Erro ao redefinir senha'
+      
+      // Se o token foi invalidado (usado), mostrar mensagem específica
+      if (errorMsg.includes('inválido') || errorMsg.includes('expirado') || errorMsg.includes('Token')) {
+        alert('Este token já foi usado ou expirou. Por favor, solicite um novo link de recuperação de senha.')
+        showLogin()
+      } else {
+        alert(errorMsg)
+      }
     }
   })
 }
