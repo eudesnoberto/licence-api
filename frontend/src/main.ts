@@ -1402,6 +1402,15 @@ async function showResetPassword(token: string) {
           </div>
           <button type="submit" id="reset-submit-btn" style="width: 100%;" disabled>Redefinir Senha</button>
         </form>
+        
+        <!-- Loading durante redefinição -->
+        <div id="reset-loading" class="reset-loading-overlay" style="display: none;">
+          <div class="reset-loading-content">
+            <div class="loading-spinner" style="margin: 0 auto 1.5rem;"></div>
+            <p class="reset-loading-text">Redefinindo senha...</p>
+            <p class="reset-loading-subtext">Aguarde enquanto processamos sua solicitação</p>
+          </div>
+        </div>
       </div>
     </main>
   `
@@ -1610,6 +1619,9 @@ async function showResetPassword(token: string) {
   })
   
   const resetForm = document.querySelector<HTMLFormElement>('#reset-password-form')
+  const loadingOverlay = document.getElementById('reset-loading')
+  const submitBtn = document.getElementById('reset-submit-btn') as HTMLButtonElement
+  
   resetForm?.addEventListener('submit', async (e) => {
     e.preventDefault()
     const newPassword = newPasswordInput?.value || ''
@@ -1617,21 +1629,30 @@ async function showResetPassword(token: string) {
     
     // Verificar se token ainda é válido
     if (Date.now() >= expirationTime) {
-      alert('O token de recuperação expirou. Por favor, solicite um novo link de recuperação de senha.')
-      showLogin()
+      showToast('O token de recuperação expirou. Por favor, solicite um novo link de recuperação de senha.', 'error', 6000)
+      setTimeout(() => showLogin(), 2000)
       return
     }
     
     const validators = validatePassword(newPassword)
     if (!validators.length || !validators.number || !validators.lowercase || !validators.uppercase || !validators.special) {
-      alert('A senha não atende aos requisitos mínimos!\n\nRequisitos:\n- Mínimo de 6 caracteres\n- Pelo menos um número\n- Pelo menos uma letra minúscula\n- Pelo menos uma letra maiúscula\n- Pelo menos um caractere especial')
+      showToast('A senha não atende aos requisitos mínimos. Verifique os critérios abaixo.', 'error', 5000)
       return
     }
     
     if (newPassword !== confirmPassword) {
-      alert('As senhas não coincidem!')
+      showToast('As senhas não coincidem. Verifique e tente novamente.', 'error', 4000)
       return
     }
+    
+    // Mostrar loading
+    if (loadingOverlay) loadingOverlay.style.display = 'flex'
+    if (submitBtn) {
+      submitBtn.disabled = true
+      submitBtn.textContent = 'Processando...'
+    }
+    if (newPasswordInput) newPasswordInput.disabled = true
+    if (confirmPasswordInput) confirmPasswordInput.disabled = true
     
     try {
       // Parar contador
@@ -1640,17 +1661,37 @@ async function showResetPassword(token: string) {
       }
       
       await resetPassword(token, newPassword)
-      alert('Senha redefinida com sucesso! Você já pode fazer login.')
-      showLogin()
+      
+      // Ocultar loading
+      if (loadingOverlay) loadingOverlay.style.display = 'none'
+      
+      // Mostrar mensagem de sucesso profissional
+      showToast('Senha redefinida com sucesso! Redirecionando para o login...', 'success', 4000)
+      
+      // Redirecionar para login após um breve delay
+      setTimeout(() => {
+        showLogin()
+      }, 2000)
     } catch (err: any) {
+      // Ocultar loading
+      if (loadingOverlay) loadingOverlay.style.display = 'none'
+      if (submitBtn) {
+        submitBtn.disabled = false
+        submitBtn.textContent = 'Redefinir Senha'
+      }
+      if (newPasswordInput) newPasswordInput.disabled = false
+      if (confirmPasswordInput) confirmPasswordInput.disabled = false
+      
       const errorMsg = err?.message ?? 'Erro ao redefinir senha'
       
       // Se o token foi invalidado (usado), mostrar mensagem específica
       if (errorMsg.includes('inválido') || errorMsg.includes('expirado') || errorMsg.includes('Token')) {
-        alert('Este token já foi usado ou expirou. Por favor, solicite um novo link de recuperação de senha.')
-        showLogin()
+        showToast('Este token já foi usado ou expirou. Por favor, solicite um novo link de recuperação de senha.', 'error', 6000)
+        setTimeout(() => {
+          showLogin()
+        }, 3000)
       } else {
-        alert(errorMsg)
+        showToast(errorMsg, 'error', 6000)
       }
     }
   })
