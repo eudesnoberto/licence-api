@@ -90,3 +90,5 @@ g_LicenseAPI_Servers[3] := "https://SUA-URL-FLY.fly.dev"            ; Cole URL d
 
 **Pronto!** Agora você sabe como criar os servidores! 🚀
 
+
+

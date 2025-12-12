@@ -18,7 +18,8 @@ body {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
   background-attachment: fixed;
   background-size: 200% 200%;
-  animation: gradientShift 15s ease infinite;
+  /* Animação desabilitada para melhor performance - pode reativar se necessário */
+  /* animation: gradientShift 15s ease infinite; */
 }
 
 @keyframes gradientShift {
@@ -310,7 +311,7 @@ tbody tr {
 
 tbody tr:hover {
   background: linear-gradient(90deg, #f8f9ff 0%, #ffffff 100%);
-  transform: scale(1.01);
+  /* transform: scale(1.01); Removido para melhor performance */
   box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
 }
 
@@ -488,8 +489,10 @@ td {
 .pricing-carousel-track {
   display: flex;
   gap: 2rem;
-  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   will-change: transform;
+  /* Otimização: usar GPU acceleration */
+  transform: translateZ(0);
 }
 
 .pricing-carousel-track .pricing-card {
@@ -748,9 +751,23 @@ td {
   min-height: 100vh;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
   background-size: 200% 200%;
-  animation: gradientShift 15s ease infinite;
+  /* animation: gradientShift 15s ease infinite; */
   position: relative;
   overflow: hidden;
+}
+
+/* Tema Musical */
+.landing-music-theme {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 25%, #0f3460 50%, #533483 75%, #e94560 100%);
+  background-size: 400% 400%;
+  animation: musicGradientShift 20s ease infinite;
+}
+
+@keyframes musicGradientShift {
+  0%, 100% { background-position: 0% 50%; }
+  25% { background-position: 100% 50%; }
+  50% { background-position: 100% 100%; }
+  75% { background-position: 0% 100%; }
 }
 
 .landing-page::before {
@@ -837,17 +854,213 @@ td {
   animation: fadeInUp 0.8s ease-out;
 }
 
+.landing-hero-music {
+  padding: 10rem 0;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Notas Musicais Flutuantes */
+.landing-music-visual {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.music-note {
+  position: absolute;
+  font-size: 3rem;
+  color: rgba(255, 255, 255, 0.3);
+  animation: floatNote 8s ease-in-out infinite;
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+}
+
+.music-note-1 {
+  top: 10%;
+  left: 10%;
+  animation-delay: 0s;
+  font-size: 2.5rem;
+}
+
+.music-note-2 {
+  top: 20%;
+  right: 15%;
+  animation-delay: 1.5s;
+  font-size: 3.5rem;
+}
+
+.music-note-3 {
+  bottom: 30%;
+  left: 20%;
+  animation-delay: 3s;
+  font-size: 2rem;
+}
+
+.music-note-4 {
+  bottom: 20%;
+  right: 10%;
+  animation-delay: 4.5s;
+  font-size: 3rem;
+}
+
+.music-note-5 {
+  top: 50%;
+  left: 50%;
+  animation-delay: 6s;
+  font-size: 2.8rem;
+  transform: translate(-50%, -50%);
+}
+
+@keyframes floatNote {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 0.3;
+  }
+  25% {
+    transform: translateY(-30px) rotate(10deg);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translateY(-60px) rotate(-10deg);
+    opacity: 0.4;
+  }
+  75% {
+    transform: translateY(-30px) rotate(5deg);
+    opacity: 0.5;
+  }
+}
+
+/* Ondas Sonoras */
+.landing-music-elements {
+  position: absolute;
+  bottom: 10%;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-end;
+  z-index: 0;
+  opacity: 0.4;
+}
+
+.sound-wave {
+  width: 8px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 4px;
+  animation: soundWave 1.5s ease-in-out infinite;
+}
+
+.sound-wave-1 {
+  height: 40px;
+  animation-delay: 0s;
+}
+
+.sound-wave-2 {
+  height: 60px;
+  animation-delay: 0.2s;
+}
+
+.sound-wave-3 {
+  height: 50px;
+  animation-delay: 0.4s;
+}
+
+@keyframes soundWave {
+  0%, 100% {
+    transform: scaleY(0.5);
+    opacity: 0.4;
+  }
+  50% {
+    transform: scaleY(1);
+    opacity: 0.8;
+  }
+}
+
+.landing-hero-music .landing-hero-title,
+.landing-hero-music .landing-hero-subtitle,
+.landing-hero-music .landing-hero-buttons {
+  position: relative;
+  z-index: 2;
+}
+
+/* Botão Musical */
+.landing-btn-music {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 50%, #c44569 100%);
+  color: white;
+  box-shadow: 0 8px 30px rgba(238, 90, 111, 0.4);
+  position: relative;
+  overflow: hidden;
+}
+
+.landing-btn-music::after {
+  content: '🎵';
+  position: absolute;
+  right: 1.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.2rem;
+  animation: musicPulse 2s ease-in-out infinite;
+}
+
+@keyframes musicPulse {
+  0%, 100% {
+    transform: translateY(-50%) scale(1);
+  }
+  50% {
+    transform: translateY(-50%) scale(1.2);
+  }
+}
+
+.landing-btn-music:hover {
+  background: linear-gradient(135deg, #ff5252 0%, #e63946 50%, #b91c1c 100%);
+  box-shadow: 0 12px 40px rgba(238, 90, 111, 0.6);
+}
+
+/* CTA Musical */
+.landing-cta-music {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  position: relative;
+}
+
+.landing-cta-music::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 20% 30%, rgba(255, 107, 107, 0.2) 0%, transparent 50%),
+    radial-gradient(circle at 80% 70%, rgba(238, 90, 111, 0.2) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
 .landing-hero-title {
   font-size: 4.5rem;
   font-weight: 900;
   margin: 0 0 2rem;
-  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), 0 0 40px rgba(255, 255, 255, 0.2);
   letter-spacing: -0.03em;
   line-height: 1.1;
-  background: linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #ffd89b 50%, #ffffff 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  animation: textGlow 3s ease-in-out infinite;
+}
+
+@keyframes textGlow {
+  0%, 100% {
+    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.3));
+  }
+  50% {
+    filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.6));
+  }
 }
 
 .landing-hero-subtitle {
@@ -1031,6 +1244,11 @@ td {
   overflow: hidden;
 }
 
+.landing-cta > .landing-container {
+  position: relative;
+  z-index: 1;
+}
+
 .landing-cta::before {
   content: '';
   position: absolute;
@@ -1039,8 +1257,9 @@ td {
   right: 0;
   bottom: 0;
   background: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM60 91c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM35 41c0 2.21-1.79 4-4 4s-4-1.79-4-4 1.79-4 4-4 4 1.79 4 4zm15.5 12.5c0 1.933-1.567 3.5-3.5 3.5s-3.5-1.567-3.5-3.5 1.567-3.5 3.5-3.5 3.5 1.567 3.5 3.5z' fill='%23ffffff' fill-opacity='0.05' fill-rule='evenodd'/%3E%3C/svg%3E");
-  opacity: 0.3;
+  opacity: 0.2;
   animation: pulse 6s ease-in-out infinite;
+  z-index: 0;
 }
 
 .landing-cta-title {
@@ -1049,17 +1268,108 @@ td {
   margin: 0 0 1.5rem;
   letter-spacing: -0.03em;
   position: relative;
-  z-index: 1;
-  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  z-index: 2;
+  color: white;
+  opacity: 1;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .landing-cta-subtitle {
   font-size: 1.5rem;
   margin: 0 0 3rem;
-  opacity: 0.95;
+  opacity: 1;
   position: relative;
-  z-index: 1;
+  z-index: 2;
   font-weight: 500;
+  color: white;
+  text-shadow: 0 1px 5px rgba(0, 0, 0, 0.2);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.landing-media-section {
+  padding: 4rem 0;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  position: relative;
+  overflow: hidden;
+}
+
+.landing-media-wrapper {
+  max-width: 1200px;
+  margin: 0 auto;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.2);
+  position: relative;
+  min-height: 400px;
+}
+
+.landing-media {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: cover;
+  max-height: 70vh;
+  animation: fadeIn 0.8s ease-out;
+}
+
+.landing-media-wrapper::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.landing-media-loading {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
+  z-index: 10;
+  width: 100%;
+  height: 100%;
+}
+
+.loading-spinner {
+  width: 60px;
+  height: 60px;
+  border: 4px solid rgba(255, 255, 255, 0.2);
+  border-top-color: #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1.5rem;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-text {
+  color: white;
+  font-size: 1.1rem;
+  font-weight: 500;
+  margin: 0;
+  text-align: center;
+  opacity: 0.9;
+  animation: pulse 2s ease-in-out infinite;
 }
 
 .landing-footer {
@@ -1223,6 +1533,26 @@ td {
     font-size: 1.125rem;
   }
   
+  .landing-hero-music {
+    padding: 6rem 0;
+  }
+  
+  .music-note {
+    font-size: 2rem;
+  }
+  
+  .landing-music-elements {
+    bottom: 5%;
+  }
+  
+  .landing-media-section {
+    padding: 2rem 0;
+  }
+  
+  .landing-media {
+    max-height: 50vh;
+  }
+  
   .landing-features {
     padding: 3rem 0;
   }
@@ -1268,4 +1598,127 @@ td {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--primary-gradient-hover);
+}
+
+/* Toast Notification */
+.toast-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 10000;
+  min-width: 320px;
+  max-width: 500px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  animation: toastSlideIn 0.3s ease-out;
+  overflow: hidden;
+}
+
+@keyframes toastSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.toast-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+}
+
+.toast-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.toast-success .toast-icon {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+}
+
+.toast-error .toast-icon {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+}
+
+.toast-info .toast-icon {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.toast-message {
+  flex: 1;
+  color: #1f2937;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  font-weight: 500;
+}
+
+.toast-close {
+  background: none;
+  border: none;
+  color: #6b7280;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.toast-close:hover {
+  background: #f3f4f6;
+  color: #1f2937;
+}
+
+.toast-success {
+  border-left: 4px solid #10b981;
+}
+
+.toast-error {
+  border-left: 4px solid #ef4444;
+}
+
+.toast-info {
+  border-left: 4px solid #667eea;
+}
+
+/* Loading spinner para formulários */
+#forgot-loading .loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(102, 126, 234, 0.2);
+  border-top-color: #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@media (max-width: 640px) {
+  .toast-notification {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+    min-width: auto;
+    max-width: none;
+  }
 }

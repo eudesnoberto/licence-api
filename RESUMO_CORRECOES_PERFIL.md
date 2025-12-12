@@ -87,3 +87,5 @@ curl -X GET "https://licence-api-zsbg.onrender.com/user/profile" \
 
 **Documento criado em**: 2024-12-15
 
+
+

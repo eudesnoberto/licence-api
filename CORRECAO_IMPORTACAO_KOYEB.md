@@ -78,3 +78,5 @@ Agora o script deve:
 
 **Script corrigido e pronto para uso!** 🚀
 
+
+

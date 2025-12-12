@@ -20,3 +20,5 @@ Write-Host ""
 Write-Host "Para remover:"
 Write-Host "   Unregister-ScheduledTask -TaskName SincronizarBancosAPI -Confirm:`$false"
 
+
+

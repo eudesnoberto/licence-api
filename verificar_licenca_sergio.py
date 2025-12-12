@@ -99,3 +99,5 @@ except requests.exceptions.RequestException as e:
 
 print("\n✅ Verificação concluída!")
 
+
+

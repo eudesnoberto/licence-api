@@ -214,3 +214,5 @@ Unregister-ScheduledTask -TaskName SincronizarBancosAPI -Confirm:$false
 
 **Documento criado em**: 2024-12-15
 
+
+

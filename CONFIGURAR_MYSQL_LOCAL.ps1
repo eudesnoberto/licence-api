@@ -128,3 +128,5 @@ Write-Host "   python testar_mysql.py" -ForegroundColor Gray
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Cyan
 
+
+

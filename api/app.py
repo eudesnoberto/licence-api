@@ -1070,34 +1070,66 @@ def user_profile():
         with get_conn() as conn:
             cur = get_cursor(conn)
             # Verificar em users
-            cur.execute(
-                "SELECT id, username, email, role, created_at FROM users WHERE username = ? LIMIT 1",
-                (username,),
-            )
-            row = cur.fetchone()
-            if row:
-                return json_response({
-                    "id": row["id"],
-                    "username": row["username"],
-                    "email": row["email"],
-                    "role": row["role"],
-                    "created_at": row["created_at"],
-                })
-            else:
-                # Se não está em users, é admin
+            if USE_MYSQL:
                 cur.execute(
-                    "SELECT id, username, created_at FROM admin_users WHERE username = ? LIMIT 1",
+                    "SELECT id, username, email, role, created_at FROM users WHERE username = %s LIMIT 1",
                     (username,),
                 )
-                row = cur.fetchone()
-                if row:
+            else:
+                cur.execute(
+                    "SELECT id, username, email, role, created_at FROM users WHERE username = ? LIMIT 1",
+                    (username,),
+                )
+            row = cur.fetchone()
+            if row:
+                # Compatível com MySQL DictCursor e SQLite Row
+                if USE_MYSQL and hasattr(row, 'keys'):
                     return json_response({
                         "id": row["id"],
                         "username": row["username"],
-                        "email": None,
-                        "role": "admin",
-                        "created_at": row["created_at"],
+                        "email": row["email"],
+                        "role": row["role"],
+                        "created_at": str(row["created_at"]),
                     })
+                else:
+                    row_dict = dict(row) if hasattr(row, 'keys') else {
+                        "id": row[0],
+                        "username": row[1],
+                        "email": row[2],
+                        "role": row[3],
+                        "created_at": row[4],
+                    }
+                    return json_response(row_dict)
+            else:
+                # Se não está em users, é admin
+                if USE_MYSQL:
+                    cur.execute(
+                        "SELECT id, username, created_at FROM admin_users WHERE username = %s LIMIT 1",
+                        (username,),
+                    )
+                else:
+                    cur.execute(
+                        "SELECT id, username, created_at FROM admin_users WHERE username = ? LIMIT 1",
+                        (username,),
+                    )
+                row = cur.fetchone()
+                if row:
+                    if USE_MYSQL and hasattr(row, 'keys'):
+                        return json_response({
+                            "id": row["id"],
+                            "username": row["username"],
+                            "email": None,
+                            "role": "admin",
+                            "created_at": str(row["created_at"]),
+                        })
+                    else:
+                        return json_response({
+                            "id": row[0] if isinstance(row, tuple) else row["id"],
+                            "username": row[1] if isinstance(row, tuple) else row["username"],
+                            "email": None,
+                            "role": "admin",
+                            "created_at": str(row[2] if isinstance(row, tuple) else row["created_at"]),
+                        })
         
         return json_response({"error": "Usuário não encontrado."}, 404)
     
@@ -1108,19 +1140,86 @@ def user_profile():
         
         with get_conn() as conn:
             cur = get_cursor(conn)
-            # Verificar em users
-            cur.execute("SELECT id FROM users WHERE username = ? LIMIT 1", (username,))
-            row = cur.fetchone()
-            if row:
-                cur.execute(
-                    "UPDATE users SET email = ?, updated_at = datetime('now') WHERE username = ?",
-                    (email, username),
-                )
-                conn.commit()
-                logger.info(f"Perfil atualizado por {username}")
-                return json_response({"ok": True})
+            
+            # Verificar primeiro em users
+            if USE_MYSQL:
+                cur.execute("SELECT id, role FROM users WHERE username = %s LIMIT 1", (username,))
             else:
-                return json_response({"error": "Apenas usuários comuns podem atualizar o perfil."}, 403)
+                cur.execute("SELECT id, role FROM users WHERE username = ? LIMIT 1", (username,))
+            row = cur.fetchone()
+            
+            if row:
+                # Usuário existe em users, atualizar email
+                if USE_MYSQL:
+                    if hasattr(row, 'keys'):
+                        user_id, user_role = row['id'], row.get('role', 'user')
+                    else:
+                        user_id, user_role = row[0], row[1] if len(row) > 1 else 'user'
+                    cur.execute(
+                        "UPDATE users SET email = %s, updated_at = NOW() WHERE username = %s",
+                        (email, username),
+                    )
+                else:
+                    user_id = row[0] if isinstance(row, tuple) else row['id']
+                    user_role = row[1] if isinstance(row, tuple) and len(row) > 1 else row.get('role', 'user') if hasattr(row, 'get') else 'user'
+                    cur.execute(
+                        "UPDATE users SET email = ?, updated_at = datetime('now') WHERE username = ?",
+                        (email, username),
+                    )
+                conn.commit()
+                logger.info(f"Perfil atualizado por {username} (email: {email})")
+                return json_response({"ok": True, "message": "Perfil atualizado com sucesso."})
+            else:
+                # Admin não está em users, verificar se está em admin_users
+                if USE_MYSQL:
+                    cur.execute("SELECT id FROM admin_users WHERE username = %s LIMIT 1", (username,))
+                else:
+                    cur.execute("SELECT id FROM admin_users WHERE username = ? LIMIT 1", (username,))
+                admin_row = cur.fetchone()
+                
+                if admin_row:
+                    # Admin existe em admin_users, criar/atualizar registro em users para permitir email
+                    # Verificar se já existe um registro em users com este username (pode ter sido criado antes)
+                    if USE_MYSQL:
+                        cur.execute("SELECT id FROM users WHERE username = %s LIMIT 1", (username,))
+                    else:
+                        cur.execute("SELECT id FROM users WHERE username = ? LIMIT 1", (username,))
+                    existing_user = cur.fetchone()
+                    
+                    if existing_user:
+                        # Já existe, apenas atualizar email
+                        if USE_MYSQL:
+                            cur.execute(
+                                "UPDATE users SET email = %s, updated_at = NOW() WHERE username = %s",
+                                (email, username),
+                            )
+                        else:
+                            cur.execute(
+                                "UPDATE users SET email = ?, updated_at = datetime('now') WHERE username = ?",
+                                (email, username),
+                            )
+                    else:
+                        # Não existe em users, criar com email e role admin
+                        # Usar hash temporário (admin pode alterar senha depois se necessário)
+                        import hashlib
+                        temp_password_hash = hashlib.sha256(f"user-salt::admin_temp_{username}".encode("utf-8")).hexdigest()
+                        
+                        if USE_MYSQL:
+                            cur.execute(
+                                "INSERT INTO users (username, password_hash, email, role) VALUES (%s, %s, %s, %s)",
+                                (username, temp_password_hash, email, 'admin'),
+                            )
+                        else:
+                            cur.execute(
+                                "INSERT INTO users (username, password_hash, email, role) VALUES (?, ?, ?, ?)",
+                                (username, temp_password_hash, email, 'admin'),
+                            )
+                    
+                    conn.commit()
+                    logger.info(f"Email adicionado ao admin {username}: {email}")
+                    return json_response({"ok": True, "message": "Email adicionado/atualizado com sucesso."})
+                else:
+                    return json_response({"error": "Usuário não encontrado."}, 404)
 
 
 @app.route("/auth/forgot-password", methods=["POST"])
@@ -1137,17 +1236,26 @@ def forgot_password():
     
     with get_conn() as conn:
         cur = get_cursor(conn)
-        # Verificar em users
-        cur.execute(
-            "SELECT username FROM users WHERE email = ? LIMIT 1",
-            (email,),
-        )
+        
+        # Verificar primeiro em users (tabela de usuários/revendedores)
+        if USE_MYSQL:
+            cur.execute("SELECT username FROM users WHERE email = %s LIMIT 1", (email,))
+        else:
+            cur.execute("SELECT username FROM users WHERE email = ? LIMIT 1", (email,))
         row = cur.fetchone()
+        
+        # Se não encontrou em users, verificar se é admin (admin_users não tem email, mas podemos verificar por username se necessário)
+        # Por enquanto, apenas verificar em users
         if not row:
+            logger.warning(f"Tentativa de recuperação de senha com email não cadastrado: {email}")
             # Não revelar se email existe ou não por segurança
             return json_response({"ok": True, "message": "Se o email existir, você receberá instruções."})
         
-        username = row[0]
+        # Obter username (compatível com MySQL DictCursor e SQLite Row)
+        if USE_MYSQL and hasattr(row, 'keys'):
+            username = row['username']
+        else:
+            username = row[0] if isinstance(row, tuple) else row['username']
         
         # Gerar token de recuperação (válido por 1 hora)
         import secrets
@@ -1155,21 +1263,36 @@ def forgot_password():
         reset_expires = (datetime.utcnow() + timedelta(hours=1)).isoformat()
         
         # Salvar token no banco (criar tabela se necessário)
-        cur.execute(
-            """
-            CREATE TABLE IF NOT EXISTS password_resets (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                username TEXT NOT NULL,
-                token TEXT NOT NULL UNIQUE,
-                expires_at TEXT NOT NULL,
-                created_at TEXT DEFAULT (datetime('now'))
+        if USE_MYSQL:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS password_resets (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    username VARCHAR(100) NOT NULL,
+                    token VARCHAR(255) NOT NULL UNIQUE,
+                    expires_at DATETIME NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    INDEX idx_token (token),
+                    INDEX idx_expires_at (expires_at)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            """)
+            cur.execute(
+                "INSERT INTO password_resets (username, token, expires_at) VALUES (%s, %s, %s)",
+                (username, reset_token, reset_expires),
             )
-            """
-        )
-        cur.execute(
-            "INSERT INTO password_resets (username, token, expires_at) VALUES (?, ?, ?)",
-            (username, reset_token, reset_expires),
-        )
+        else:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS password_resets (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username TEXT NOT NULL,
+                    token TEXT NOT NULL UNIQUE,
+                    expires_at TEXT NOT NULL,
+                    created_at TEXT DEFAULT (datetime('now'))
+                )
+            """)
+            cur.execute(
+                "INSERT INTO password_resets (username, token, expires_at) VALUES (?, ?, ?)",
+                (username, reset_token, reset_expires),
+            )
         conn.commit()
         
         # Enviar email
@@ -1223,17 +1346,73 @@ def forgot_password():
             </body>
             </html>
             """
-            send_email(
+            success = send_email(
                 to_email=email,
                 subject="Recuperação de Senha - Easy Play Rockola",
                 html_body=html_body,
             )
-            logger.info(f"Email de recuperação de senha enviado para {email}")
+            if not success:
+                logger.error(f"Falha ao enviar email de recuperação para {email} - send_email retornou False")
+                logger.error(f"Configuração SMTP: HOST={config.SMTP_HOST}, PORT={config.SMTP_PORT}, USER={config.SMTP_USER}, TLS={config.SMTP_USE_TLS}")
+                return json_response({"error": "Erro ao enviar email. Verifique a configuração SMTP no servidor."}, 500)
+            logger.info(f"✅ Email de recuperação de senha enviado com sucesso para {email}")
+            logger.info(f"   Token gerado: {reset_token[:20]}...")
         except Exception as e:
-            logger.error(f"Erro ao enviar email de recuperação: {e}")
-            return json_response({"error": "Erro ao enviar email."}, 500)
+            import traceback
+            logger.error(f"❌ Erro ao enviar email de recuperação: {e}")
+            logger.error(f"📋 Traceback completo:\n{traceback.format_exc()}")
+            return json_response({"error": f"Erro ao enviar email: {str(e)}"}, 500)
     
     return json_response({"ok": True, "message": "Se o email existir, você receberá instruções."})
+
+
+@app.route("/auth/test-email", methods=["POST"])
+@require_admin
+def test_email():
+    """Endpoint para testar envio de email (apenas admin)."""
+    data = request.get_json(silent=True) or {}
+    test_email_addr = (data.get("email") or "").strip()
+    
+    if not test_email_addr:
+        return json_response({"error": "E-mail é obrigatório."}, 400)
+    
+    if not config.SMTP_ENABLED:
+        return json_response({"error": "SMTP não está habilitado."}, 503)
+    
+    try:
+        from email_service import send_email
+        
+        html_body = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; padding: 20px;">
+            <h2 style="color: #667eea;">✅ Teste de Email</h2>
+            <p>Este é um email de teste do sistema de licenciamento.</p>
+            <p>Se você recebeu este email, a configuração SMTP está funcionando corretamente!</p>
+            <hr>
+            <p style="color: #6b7280; font-size: 12px;">
+                Enviado automaticamente pelo sistema de teste SMTP
+            </p>
+        </body>
+        </html>
+        """
+        
+        success = send_email(
+            to_email=test_email_addr,
+            subject="Teste de Email - Sistema de Licenciamento",
+            html_body=html_body,
+        )
+        
+        if not success:
+            logger.error(f"Falha no teste de email para {test_email_addr}")
+            return json_response({"error": "Falha ao enviar email de teste. Verifique os logs do servidor."}, 500)
+        
+        logger.info(f"✅ Email de teste enviado com sucesso para {test_email_addr}")
+        return json_response({"ok": True, "message": f"Email de teste enviado para {test_email_addr}. Verifique a caixa de entrada e a pasta de spam."})
+        
+    except Exception as e:
+        import traceback
+        logger.error(f"Erro no teste de email: {e}\n{traceback.format_exc()}")
+        return json_response({"error": f"Erro ao enviar email de teste: {str(e)}"}, 500)
 
 
 @app.route("/auth/reset-password", methods=["POST"])
@@ -1252,36 +1431,48 @@ def reset_password():
     with get_conn() as conn:
         cur = get_cursor(conn)
         # Verificar token
-        cur.execute(
-            """
-            SELECT username, expires_at FROM password_resets
-            WHERE token = ? AND expires_at > datetime('now')
-            LIMIT 1
-            """,
-            (token,),
-        )
+        if USE_MYSQL:
+            cur.execute(
+                "SELECT username, expires_at FROM password_resets WHERE token = %s AND expires_at > NOW() LIMIT 1",
+                (token,),
+            )
+        else:
+            cur.execute(
+                "SELECT username, expires_at FROM password_resets WHERE token = ? AND expires_at > datetime('now') LIMIT 1",
+                (token,),
+            )
         row = cur.fetchone()
         if not row:
             return json_response({"error": "Token inválido ou expirado."}, 400)
         
-        username, expires_at = row[0], row[1]
+        # Obter username e expires_at (compatível com MySQL DictCursor e SQLite Row)
+        if USE_MYSQL and hasattr(row, 'keys'):
+            username, expires_at = row['username'], row['expires_at']
+        else:
+            username = row[0] if isinstance(row, tuple) else row['username']
+            expires_at = row[1] if isinstance(row, tuple) else row['expires_at']
         
         # Atualizar senha
-        cur.execute(
-            "SELECT id FROM users WHERE username = ? LIMIT 1",
-            (username,),
-        )
+        if USE_MYSQL:
+            cur.execute("SELECT id FROM users WHERE username = %s LIMIT 1", (username,))
+        else:
+            cur.execute("SELECT id FROM users WHERE username = ? LIMIT 1", (username,))
         user_row = cur.fetchone()
         if not user_row:
             return json_response({"error": "Usuário não encontrado."}, 404)
         
-        cur.execute(
-            "UPDATE users SET password_hash = ? WHERE username = ?",
-            (_user_hash_password(new_password), username),
-        )
-        
-        # Remover token usado
-        cur.execute("DELETE FROM password_resets WHERE token = ?", (token,))
+        if USE_MYSQL:
+            cur.execute(
+                "UPDATE users SET password_hash = %s WHERE username = %s",
+                (_user_hash_password(new_password), username),
+            )
+            cur.execute("DELETE FROM password_resets WHERE token = %s", (token,))
+        else:
+            cur.execute(
+                "UPDATE users SET password_hash = ? WHERE username = ?",
+                (_user_hash_password(new_password), username),
+            )
+            cur.execute("DELETE FROM password_resets WHERE token = ?", (token,))
         conn.commit()
         
         logger.info(f"Senha redefinida para usuário {username} via token")

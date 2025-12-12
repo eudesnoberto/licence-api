@@ -114,3 +114,5 @@ Enquanto não migra para PostgreSQL, use **keep-alive externo**:
 
 **Solução implementada!** Use keep-alive agora e migre para PostgreSQL quando possível! 🚀
 
+
+

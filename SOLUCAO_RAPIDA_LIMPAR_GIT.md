@@ -90,3 +90,5 @@ Se não retornar nada, está limpo!
 
 **IMPORTANTE**: Mesmo limpando o histórico, **ROTACIONAR as credenciais é obrigatório** porque elas já foram expostas!
 
+
+

@@ -143,3 +143,5 @@ Você precisaria criar um endpoint temporário ou usar SQL direto.
 
 **Documento criado em**: 2024-12-15
 
+
+

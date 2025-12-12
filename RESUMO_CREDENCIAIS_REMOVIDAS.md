@@ -104,3 +104,5 @@ git push -f origin main
 
 **IMPORTANTE**: Rotacionar credenciais é mais importante que limpar histórico, pois invalida as credenciais expostas!
 
+
+

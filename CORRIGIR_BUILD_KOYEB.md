@@ -94,3 +94,5 @@ O Koyeb está tentando executar um **comando de build customizado** após o buil
 
 **Após corrigir, o build deve funcionar!** 🚀
 
+
+

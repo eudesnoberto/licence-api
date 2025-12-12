@@ -106,3 +106,5 @@ Se o `app.py` usar uma porta específica, o Koyeb injeta a variável `PORT` auto
 
 **Pronto!** Após configurar o Docker, o build deve funcionar. 🎯
 
+
+

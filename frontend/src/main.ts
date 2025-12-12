@@ -214,9 +214,6 @@ if (import.meta.env.DEV) {
   console.log('📡 Servidores API configurados:', API_SERVERS)
 }
 
-// Log final dos servidores configurados
-console.log('📡 Servidores API configurados:', API_SERVERS)
-
 // Roteamento simples baseado em hash
 function getRoute(): string {
   const hash = window.location.hash.slice(1) || '/'
@@ -276,44 +273,63 @@ async function fetchHealth(): Promise<string> {
   }
 }
 
-async function fetchDevices(): Promise<Device[]> {
+// Cache de dados
+let devicesCache: { data: Device[]; timestamp: number } | null = null
+const CACHE_DURATION = 30000 // 30 segundos
+
+async function fetchDevices(useCache: boolean = true): Promise<Device[]> {
+  // Verificar cache
+  if (useCache && devicesCache) {
+    const now = Date.now()
+    if (now - devicesCache.timestamp < CACHE_DURATION) {
+      if (import.meta.env.DEV) {
+        console.log('📦 Usando cache de dispositivos')
+      }
+      return devicesCache.data
+    }
+  }
+  
   try {
-    console.log('🔍 Buscando dispositivos...', { authToken: authToken ? 'presente' : 'ausente' })
+    if (import.meta.env.DEV) {
+      console.log('🔍 Buscando dispositivos...')
+    }
     const res = await fetchWithFallback('/admin/devices', {
       headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
     })
-    console.log('📡 Resposta do servidor:', { status: res.status, ok: res.ok })
     
     if (!res.ok) {
       const errorText = await res.text()
-      console.error('❌ Erro na resposta:', { status: res.status, error: errorText })
-      return []
+      if (import.meta.env.DEV) {
+        console.error('❌ Erro na resposta:', { status: res.status, error: errorText })
+      }
+      return devicesCache?.data || []
     }
     
     const data = await res.json()
-    console.log('📦 Dados recebidos:', data)
     
     // Verificar diferentes formatos de resposta
+    let devices: Device[] = []
     if (Array.isArray(data)) {
-      console.log('✅ Dados são um array:', data.length, 'itens')
-      return data
+      devices = data
+    } else if (data.items && Array.isArray(data.items)) {
+      devices = data.items
+    } else if (data.devices && Array.isArray(data.devices)) {
+      devices = data.devices
     }
     
-    if (data.items && Array.isArray(data.items)) {
-      console.log('✅ Dados em data.items:', data.items.length, 'itens')
-      return data.items
+    // Atualizar cache
+    devicesCache = { data: devices, timestamp: Date.now() }
+    
+    if (import.meta.env.DEV) {
+      console.log('✅ Dados recebidos:', devices.length, 'itens')
     }
     
-    if (data.devices && Array.isArray(data.devices)) {
-      console.log('✅ Dados em data.devices:', data.devices.length, 'itens')
-      return data.devices
-    }
-    
-    console.warn('⚠️  Formato de dados desconhecido:', data)
-    return []
+    return devices
   } catch (error) {
-    console.error('❌ Erro ao buscar dispositivos:', error)
-    return []
+    if (import.meta.env.DEV) {
+      console.error('❌ Erro ao buscar dispositivos:', error)
+    }
+    return devicesCache?.data || []
   }
 }
 
@@ -421,8 +437,29 @@ async function forgotPassword(email: string): Promise<void> {
     body: JSON.stringify({ email }),
   })
   if (!res.ok) {
-    const text = await res.text()
-    throw new Error(text || 'Erro ao solicitar recuperação de senha')
+    let errorMessage = 'Erro ao solicitar recuperação de senha'
+    try {
+      const text = await res.text()
+      if (text) {
+        try {
+          const json = JSON.parse(text)
+          errorMessage = json.error || json.message || text
+        } catch {
+          errorMessage = text
+        }
+      }
+    } catch {
+      errorMessage = `Erro HTTP ${res.status}: ${res.statusText}`
+    }
+    
+    // Mensagens específicas para erros comuns
+    if (errorMessage.includes('SMTP') || errorMessage.includes('email não está habilitada')) {
+      errorMessage = 'O envio de emails não está configurado no servidor. Entre em contato com o administrador.'
+    } else if (errorMessage.includes('Erro ao enviar email')) {
+      errorMessage = 'Não foi possível enviar o email. Verifique se o SMTP está configurado corretamente.'
+    }
+    
+    throw new Error(errorMessage)
   }
 }
 
@@ -614,68 +651,54 @@ function renderPieChart(data: Record<string, number>, containerId: string, title
   `
 }
 
-// Landing Page Pública
+// Função para obter uma mídia aleatória (imagem ou vídeo)
+function getRandomMedia(): { type: 'image' | 'video', src: string } {
+  const images = ['img0.jpg', 'mg1.jpg', 'mg2.jpg']
+  const videos = ['video0_optimized.mp4', 'video1_optimized.mp4', 'video2_optimized.mp4']
+  
+  // Combinar todas as mídias em um array
+  const allMedia: Array<{ type: 'image' | 'video', src: string }> = [
+    ...images.map(img => ({ type: 'image' as const, src: img })),
+    ...videos.map(vid => ({ type: 'video' as const, src: vid }))
+  ]
+  
+  // Selecionar aleatoriamente
+  const randomIndex = Math.floor(Math.random() * allMedia.length)
+  return allMedia[randomIndex]
+}
+
+// Landing Page Pública - Tema Musical
 function showLandingPage() {
   const app = document.querySelector<HTMLDivElement>('#app')
   if (!app) return
   
+  // Obter mídia aleatória
+  const randomMedia = getRandomMedia()
+  
   app.innerHTML = `
-    <div class="landing-page">
+    <div class="landing-page landing-music-theme">
       <header class="landing-header">
         <div class="landing-container">
-          <h1 class="landing-logo">Easy Play Rockola</h1>
+          <h1 class="landing-logo">🎵 Easy Play Rockola</h1>
           <nav class="landing-nav">
-            <a href="#dashboard" class="landing-nav-link">Acessar Dashboard</a>
+            <a href="#dashboard" class="landing-nav-link">Login</a>
           </nav>
         </div>
       </header>
       
-      <section class="landing-hero">
-        <div class="landing-container">
-          <h2 class="landing-hero-title">Sistema de Licenciamento Profissional</h2>
-          <p class="landing-hero-subtitle">
-            Gerencie suas licenças de software de forma simples, segura e eficiente.
-          </p>
-          <div class="landing-hero-buttons">
-            <a href="#dashboard" class="landing-btn landing-btn-primary">Acessar Dashboard</a>
-            <a href="#sobre" class="landing-btn landing-btn-secondary">Saiba Mais</a>
-          </div>
-        </div>
-      </section>
       
-      <section class="landing-features">
+      <section class="landing-media-section">
         <div class="landing-container">
-          <h2 class="landing-section-title">Recursos Principais</h2>
-          <div class="landing-features-grid">
-            <div class="landing-feature-card">
-              <div class="landing-feature-icon">🔒</div>
-              <h3>Segurança</h3>
-              <p>Proteção avançada contra pirataria e clonagem de licenças</p>
+          <div class="landing-media-wrapper">
+            <div class="landing-media-loading" id="media-loading">
+              <div class="loading-spinner"></div>
+              <p class="loading-text">Carregando mídia...</p>
             </div>
-            <div class="landing-feature-card">
-              <div class="landing-feature-icon">📊</div>
-              <h3>Dashboard Completo</h3>
-              <p>Visualize estatísticas e gerencie todas as licenças em um só lugar</p>
-            </div>
-            <div class="landing-feature-card">
-              <div class="landing-feature-icon">⚡</div>
-              <h3>Rápido e Eficiente</h3>
-              <p>Sistema otimizado para máxima performance e confiabilidade</p>
-            </div>
-            <div class="landing-feature-card">
-              <div class="landing-feature-icon">📧</div>
-              <h3>Notificações</h3>
-              <p>Alertas automáticos por email sobre expiração de licenças</p>
-            </div>
+            ${randomMedia.type === 'image' 
+              ? `<img src="/${randomMedia.src}" alt="Easy Play Rockola" class="landing-media" style="display: none;" />`
+              : `<video src="/${randomMedia.src}" class="landing-media" autoplay muted loop playsinline style="display: none;"></video>`
+            }
           </div>
-        </div>
-      </section>
-      
-      <section class="landing-cta">
-        <div class="landing-container">
-          <h2 class="landing-cta-title">Pronto para começar?</h2>
-          <p class="landing-cta-subtitle">Acesse o dashboard e gerencie suas licenças agora mesmo</p>
-          <a href="#dashboard" class="landing-btn landing-btn-primary landing-btn-large">Acessar Dashboard</a>
         </div>
       </section>
       
@@ -694,6 +717,100 @@ function showLandingPage() {
       navigateTo('/dashboard')
     })
   })
+  
+  // Gerenciar loading da mídia - usar setTimeout para garantir que o DOM esteja pronto
+  setTimeout(() => {
+    const mediaElement = document.querySelector<HTMLImageElement | HTMLVideoElement>('.landing-media')
+    const loadingElement = document.getElementById('media-loading')
+    
+    if (!mediaElement || !loadingElement) {
+      console.warn('Elementos de mídia ou loading não encontrados')
+      return
+    }
+    
+    let loadingStartTime = Date.now()
+    const minLoadingTime = 500 // Tempo mínimo de exibição do loading (500ms)
+    
+    const hideLoading = () => {
+      const elapsed = Date.now() - loadingStartTime
+      const remainingTime = Math.max(0, minLoadingTime - elapsed)
+      
+      setTimeout(() => {
+        if (mediaElement) {
+          mediaElement.style.display = 'block'
+          mediaElement.style.opacity = '0'
+          requestAnimationFrame(() => {
+            if (mediaElement) {
+              mediaElement.style.transition = 'opacity 0.5s ease-in'
+              mediaElement.style.opacity = '1'
+            }
+          })
+        }
+        if (loadingElement) {
+          loadingElement.style.transition = 'opacity 0.3s ease-out'
+          loadingElement.style.opacity = '0'
+          setTimeout(() => {
+            if (loadingElement) {
+              loadingElement.style.display = 'none'
+            }
+          }, 300)
+        }
+      }, remainingTime)
+    }
+    
+    if (randomMedia.type === 'image') {
+      const img = mediaElement as HTMLImageElement
+      
+      // Verificar se já está carregada
+      if (img.complete && img.naturalWidth > 0) {
+        hideLoading()
+        return
+      }
+      
+      // Adicionar listeners
+      img.addEventListener('load', hideLoading, { once: true })
+      img.addEventListener('error', () => {
+        if (loadingElement) {
+          loadingElement.innerHTML = `
+            <div class="loading-spinner" style="border-top-color: #ef4444;"></div>
+            <p class="loading-text" style="color: #ef4444;">Erro ao carregar mídia</p>
+          `
+        }
+      }, { once: true })
+    } else {
+      const video = mediaElement as HTMLVideoElement
+      
+      // Verificar se já está carregado
+      if (video.readyState >= 3) {
+        hideLoading()
+        return
+      }
+      
+      // Adicionar listeners
+      const handleLoad = () => {
+        hideLoading()
+        video.removeEventListener('loadeddata', handleLoad)
+        video.removeEventListener('canplay', handleLoad)
+        video.removeEventListener('canplaythrough', handleLoad)
+      }
+      
+      video.addEventListener('loadeddata', handleLoad)
+      video.addEventListener('canplay', handleLoad)
+      video.addEventListener('canplaythrough', handleLoad)
+      
+      video.addEventListener('error', () => {
+        if (loadingElement) {
+          loadingElement.innerHTML = `
+            <div class="loading-spinner" style="border-top-color: #ef4444;"></div>
+            <p class="loading-text" style="color: #ef4444;">Erro ao carregar mídia</p>
+          `
+        }
+      }, { once: true })
+      
+      // Forçar carregamento
+      video.load()
+    }
+  }, 50)
 }
 
 // Login do Dashboard
@@ -921,6 +1038,56 @@ async function showUserProfile() {
   }
 }
 
+// Função para exibir toast/notificação flutuante
+function showToast(message: string, type: 'success' | 'error' | 'info' = 'info', duration: number = 5000) {
+  // Remover toast existente se houver
+  const existingToast = document.querySelector('.toast-notification')
+  if (existingToast) {
+    existingToast.remove()
+  }
+  
+  const toast = document.createElement('div')
+  toast.className = `toast-notification toast-${type}`
+  toast.innerHTML = `
+    <div class="toast-content">
+      <div class="toast-icon">
+        ${type === 'success' ? '✓' : type === 'error' ? '✕' : 'ℹ'}
+      </div>
+      <div class="toast-message">${message}</div>
+      <button class="toast-close" aria-label="Fechar">&times;</button>
+    </div>
+  `
+  
+  document.body.appendChild(toast)
+  
+  // Animação de entrada
+  requestAnimationFrame(() => {
+    toast.style.opacity = '0'
+    toast.style.transform = 'translateY(-20px)'
+    requestAnimationFrame(() => {
+      toast.style.transition = 'all 0.3s ease-out'
+      toast.style.opacity = '1'
+      toast.style.transform = 'translateY(0)'
+    })
+  })
+  
+  // Botão de fechar
+  const closeBtn = toast.querySelector('.toast-close')
+  const closeToast = () => {
+    toast.style.transition = 'all 0.3s ease-in'
+    toast.style.opacity = '0'
+    toast.style.transform = 'translateY(-20px)'
+    setTimeout(() => toast.remove(), 300)
+  }
+  
+  closeBtn?.addEventListener('click', closeToast)
+  
+  // Auto-fechar após duração
+  if (duration > 0) {
+    setTimeout(closeToast, duration)
+  }
+}
+
 function showForgotPassword() {
   const app = document.querySelector<HTMLDivElement>('#app')
   if (!app) return
@@ -937,9 +1104,13 @@ function showForgotPassword() {
             <label>E-mail *</label>
             <input type="email" id="forgot-email" required placeholder="seu@email.com" />
           </div>
-          <div style="display: flex; gap: 1rem;">
+          <div id="forgot-loading" style="display: none; text-align: center; padding: 1.5rem;">
+            <div class="loading-spinner" style="margin: 0 auto 1rem;"></div>
+            <p style="color: #667eea; font-weight: 500;">Enviando solicitação...</p>
+          </div>
+          <div id="forgot-form-buttons" style="display: flex; gap: 1rem;">
             <button type="button" id="cancel-forgot-btn" style="flex: 1; background: #e5e7eb; color: #374151; padding: 0.875rem; border-radius: 8px; border: none; font-weight: 600; cursor: pointer;">Voltar</button>
-            <button type="submit" style="flex: 1;">Enviar Instruções</button>
+            <button type="submit" id="submit-forgot-btn" style="flex: 1;">Enviar Instruções</button>
           </div>
         </form>
       </div>
@@ -947,15 +1118,48 @@ function showForgotPassword() {
   `
   
   const forgotForm = document.querySelector<HTMLFormElement>('#forgot-password-form')
+  const loadingDiv = document.getElementById('forgot-loading')
+  const buttonsDiv = document.getElementById('forgot-form-buttons')
+  const submitBtn = document.getElementById('submit-forgot-btn') as HTMLButtonElement
+  const emailInput = document.getElementById('forgot-email') as HTMLInputElement
+  
   forgotForm?.addEventListener('submit', async (e) => {
     e.preventDefault()
-    const email = (document.getElementById('forgot-email') as HTMLInputElement)?.value || ''
+    const email = emailInput?.value || ''
+    
+    if (!email) return
+    
+    // Mostrar loading
+    if (loadingDiv) loadingDiv.style.display = 'block'
+    if (buttonsDiv) buttonsDiv.style.display = 'none'
+    if (submitBtn) submitBtn.disabled = true
+    if (emailInput) emailInput.disabled = true
+    
     try {
       await forgotPassword(email)
-      alert('Se o e-mail existir, você receberá instruções de recuperação de senha.')
-      showLogin()
+      
+      // Ocultar loading
+      if (loadingDiv) loadingDiv.style.display = 'none'
+      if (buttonsDiv) buttonsDiv.style.display = 'flex'
+      if (submitBtn) submitBtn.disabled = false
+      if (emailInput) emailInput.disabled = false
+      
+      // Mostrar toast de sucesso
+      showToast('Se o e-mail existir, você receberá instruções de recuperação de senha.', 'success', 6000)
+      
+      // Voltar para login após um delay
+      setTimeout(() => {
+        showLogin()
+      }, 2000)
     } catch (err: any) {
-      alert(err?.message ?? 'Erro ao solicitar recuperação de senha')
+      // Ocultar loading
+      if (loadingDiv) loadingDiv.style.display = 'none'
+      if (buttonsDiv) buttonsDiv.style.display = 'flex'
+      if (submitBtn) submitBtn.disabled = false
+      if (emailInput) emailInput.disabled = false
+      
+      // Mostrar toast de erro
+      showToast(err?.message ?? 'Erro ao solicitar recuperação de senha', 'error', 6000)
     }
   })
   
@@ -1022,6 +1226,23 @@ async function showDashboard() {
   const app = document.querySelector<HTMLDivElement>('#app')
   if (!app) return
   
+  // Mostrar loading
+  app.innerHTML = `
+    <main class="app">
+      <div class="app-header">
+        <h1>Dashboard de Licenciamento</h1>
+      </div>
+      <div class="app-content" style="text-align: center; padding: 4rem;">
+        <div style="display: inline-block; padding: 2rem; background: white; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+          <div style="font-size: 1.5rem; margin-bottom: 1rem;">⏳</div>
+          <div style="font-size: 1.1rem; color: #667eea; font-weight: 600;">Carregando dashboard...</div>
+          <div style="margin-top: 1rem; color: #6b7280; font-size: 0.9rem;">Aguarde enquanto buscamos os dados</div>
+        </div>
+      </div>
+    </main>
+  `
+  
+  // Carregar dados em paralelo
   const [health, devices, users] = await Promise.all([
     fetchHealth(),
     fetchDevices(),
@@ -1087,7 +1308,7 @@ async function showDashboard() {
                 : 'Preencha todos os campos para cadastrar uma nova licença. Todos os campos são obrigatórios.'}
             </p>
             <form id="quick-license-form" style="display: grid; gap: 1rem;">
-              <div>
+  <div>
                 <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Device ID *</label>
                 <input 
                   type="text" 
@@ -1096,7 +1317,7 @@ async function showDashboard() {
                   placeholder="Cole o Device ID aqui (ex: abc123def456...)" 
                   style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 2px solid #e5e7eb; font-family: monospace;"
                 />
-              </div>
+    </div>
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                 <div>
                   <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Nome *</label>
@@ -1161,8 +1382,8 @@ async function showDashboard() {
               <div style="background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); padding: 1rem; border-radius: 12px; border: 2px solid #10b981;">
                 <p style="margin: 0; color: #065f46; font-weight: 600; display: flex; align-items: center; gap: 0.5rem;">
                   <span>✓</span> Licença Gratuita - Válida por tempo ilimitado
-                </p>
-              </div>
+    </p>
+  </div>
               `}
               <button type="submit" style="padding: 0.875rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
                 ${userRole === 'user' ? 'Criar Licença Gratuita' : 'Criar Licença'}
@@ -1358,6 +1579,13 @@ async function showDashboard() {
               <p>Nenhuma licença cadastrada ainda.</p>
             </div>
           ` : `
+            ${devices.length > 50 ? `
+            <div style="background: #fff3cd; border: 2px solid #ffc107; border-radius: 12px; padding: 1rem; margin-bottom: 1rem;">
+              <p style="margin: 0; color: #856404; font-size: 0.9rem;">
+                <strong>⚠️ Muitas licenças (${devices.length}):</strong> A tabela pode demorar para carregar. Considere usar filtros ou paginação.
+              </p>
+            </div>
+            ` : ''}
             <div class="table-container">
               <table>
                 <thead>
@@ -1477,9 +1705,13 @@ async function showDashboard() {
     </main>
   `
   
-  // Renderizar gráficos
-  renderPieChart(stats.byType, 'chart-by-type', 'Licenças por Tipo')
-  renderPieChart(stats.byStatus, 'chart-by-status', 'Licenças por Status')
+  // Renderizar gráficos com lazy loading (usar requestAnimationFrame)
+  requestAnimationFrame(() => {
+    renderPieChart(stats.byType, 'chart-by-type', 'Licenças por Tipo')
+    requestAnimationFrame(() => {
+      renderPieChart(stats.byStatus, 'chart-by-status', 'Licenças por Status')
+    })
+  })
   
   // Event listeners para ações de licenças
   document.querySelectorAll('[data-action="deactivate"]').forEach((btn) => {
@@ -1493,6 +1725,8 @@ async function showDashboard() {
       
       try {
         await deactivateLicense(deviceId)
+        // Invalidar cache
+        devicesCache = null
         alert('Licença desativada com sucesso!')
         await showDashboard()
       } catch (err: any) {
@@ -1512,6 +1746,8 @@ async function showDashboard() {
       
       try {
         await reactivateLicense(deviceId)
+        // Invalidar cache
+        devicesCache = null
         alert('Licença reativada com sucesso!')
         await showDashboard()
       } catch (err: any) {
@@ -1536,6 +1772,8 @@ async function showDashboard() {
       
       try {
         await deleteLicense(deviceId)
+        // Invalidar cache
+        devicesCache = null
         alert('Licença excluída permanentemente!')
         await showDashboard()
       } catch (err: any) {
@@ -1715,10 +1953,12 @@ async function showDashboard() {
         return
       }
       
+      // Invalidar cache
+      devicesCache = null
       alert(userRole === 'user' 
         ? 'Licença gratuita ilimitada criada com sucesso!' 
         : `Licença ${licenseType} criada com sucesso!`)
-      location.reload()
+      await showDashboard()
     } catch (err: any) {
       alert(`Erro: ${err?.message || 'Erro ao criar licença'}`)
     }
@@ -1741,7 +1981,7 @@ async function showDashboard() {
     try {
       await createUser(username, password, email, role)
       alert('Usuário criado com sucesso!')
-      location.reload()
+      await showDashboard()
     } catch (err: any) {
       alert(err?.message || 'Erro ao criar usuário')
     }
@@ -1887,15 +2127,19 @@ function initPricingCarousel() {
   createDots()
   updateCarousel()
   
-  // Recalcular em resize
+  // Recalcular em resize com debounce otimizado
   let resizeTimeout: number
+  let isResizing = false
   window.addEventListener('resize', () => {
+    if (isResizing) return
+    isResizing = true
     clearTimeout(resizeTimeout)
     resizeTimeout = window.setTimeout(() => {
       createDots()
       updateCarousel()
-    }, 250)
-  })
+      isResizing = false
+    }, 300)
+  }, { passive: true })
 }
 
 // Router principal

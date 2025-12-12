@@ -293,7 +293,17 @@ def send_email(to_email: str, subject: str, html_body: str) -> bool:
         
         return True
     except Exception as e:
-        print(f"Erro ao enviar email para {to_email}: {e}")
+        import traceback
+        error_msg = str(e)
+        print(f"Erro ao enviar email para {to_email}: {error_msg}")
+        print(f"Traceback: {traceback.format_exc()}")
+        # Log mais detalhado para debug
+        if "authentication failed" in error_msg.lower() or "login" in error_msg.lower():
+            print("ERRO: Credenciais SMTP inválidas")
+        elif "connection" in error_msg.lower() or "timeout" in error_msg.lower():
+            print("ERRO: Não foi possível conectar ao servidor SMTP")
+        elif "tls" in error_msg.lower() or "ssl" in error_msg.lower():
+            print("ERRO: Problema com TLS/SSL no SMTP")
         return False
 
 

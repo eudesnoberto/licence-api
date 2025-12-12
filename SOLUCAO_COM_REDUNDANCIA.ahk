@@ -58,6 +58,34 @@ License_GetCurrentServer(serverIndex := 1) {
 }
 
 ; ============================================================================
+; FUNÇÃO 0: License_CheckInternet() - Verifica conectividade com internet
+; ============================================================================
+License_CheckInternet() {
+    ; Tenta ler IP do config.ini, se não existir usa padrão (Google DNS)
+    configFile := A_ScriptDir . "\config.ini"
+    testIP := "8.8.8.8"  ; Google DNS como padrão
+    
+    IfExist, %configFile%
+    {
+        IniRead, conection, %configFile%, IPS, IP
+        If (conection And StrLen(conection) > 0) {
+            testIP := conection
+        }
+    }
+    
+    ; Faz ping no IP configurado
+    RunWait, ping.exe %testIP% -n 1 -w 3000,, Hide UseErrorlevel
+    
+    ; Se ErrorLevel > 0, significa que o ping falhou (sem internet)
+    If (ErrorLevel) {
+        return false
+    }
+    
+    ; Ping bem-sucedido = tem internet
+    return true
+}
+
+; ============================================================================
 ; FUNÇÃO 1: License_GetDeviceId()
 ; ============================================================================
 License_GetDeviceId() {
@@ -637,7 +665,30 @@ License_LoadToken() {
 }
 
 ; ============================================================================
-; VERIFICAÇÃO DE LICENÇA - EXECUTA AUTOMATICAMENTE
+; VERIFICAÇÃO DE INTERNET E LICENÇA - EXECUTA AUTOMATICAMENTE
+; ============================================================================
+
+; ============================================================================
+; PASSO 1: Verifica se há internet
+; ============================================================================
+hasInternet := License_CheckInternet()
+
+If (!hasInternet) {
+    ; Sem internet: mostra mensagem mas NÃO fecha o programa
+    SoundSet, 10
+    Progress, CTRED b fs15 fm12 zh0 w1360, FALHA NA CONEXAO COM A INTERNET`nPOR FAVOR TENTE NOVAMENTE MAIS TARDE.`n`nO programa continuará, mas a verificação de licença será pulada.,,Countdowner
+    WinSet, TransColor, 000000 240, Countdowner
+    Sleep 7000
+    Progress, Off
+    SoundSet, 10
+    
+    ; Informa ao usuário que não há internet e pula verificação de licença
+    ; O programa continua executando normalmente
+    Goto, SkipLicenseCheck
+}
+
+; ============================================================================
+; PASSO 2: Tem internet - Verifica Device ID
 ; ============================================================================
 deviceId := License_GetDeviceId()
 
@@ -645,6 +696,13 @@ If (!deviceId Or StrLen(deviceId) < 16) {
     MsgBox, 16, Erro Crítico, Não foi possível gerar Device ID.`n`nTente executar como administrador ou verifique as permissões da pasta.`n`nPasta do script: %A_ScriptDir%
     ExitApp
 }
+
+; ============================================================================
+; PASSO 3: Tem internet - Verifica licença
+; ============================================================================
+; Exibe mensagem "Aguarde" durante a verificação
+Progress, CT00FF00 b fs15 fm12 zh0 w1360, AGUARDE...`nVERIFICANDO LICENÇA...`nPor favor, aguarde enquanto o sistema valida sua licença.,,AguardeVerificacao
+WinSet, TransColor, 000000 240, AguardeVerificacao
 
 isValid := License_Verify()
 
@@ -657,6 +715,9 @@ If (!isValid And g_LicenseVerify_Offline) {
         }
     }
 }
+
+; Remove mensagem "Aguarde" após verificação
+Progress, Off
 
 If (!isValid) {
     global g_LicenseVerify_DeviceId, g_LicenseVerify_Message
@@ -686,9 +747,11 @@ If (!isValid) {
     ExitApp
 }
 
+SkipLicenseCheck:
 ; ============================================================================
 ; SEU CÓDIGO ORIGINAL AQUI
 ; ============================================================================
 ; A partir daqui, seu script pode executar normalmente
-; A licença foi verificada e está válida
+; Se passou pela verificação de licença, está válida
+; Se pulou (sem internet), o programa continua mas sem verificação
 

@@ -101,3 +101,5 @@ Após limpar o histórico:
 
 **Nota**: A opção mais segura é **rotacionar as credenciais** (mudar senha) após limpar o histórico.
 
+
+

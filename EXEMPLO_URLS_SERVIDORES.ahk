@@ -39,3 +39,5 @@ g_LicenseAPI_Servers[3] := "https://licence-api-backup2.fly.dev"            ; Fl
 ; 5. Fly.io: URL aparece após deploy (ex: xxx.fly.dev)
 ; ============================================================================
 
+
+
