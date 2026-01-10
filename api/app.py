@@ -37,7 +37,7 @@ app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1, x_
 CORS(
     app,
     resources={r"/*": {
-        "origins": ["https://fartgreen.fun", "https://www.fartgreen.fun", "http://localhost:5173"],
+        "origins": ["https://api.epr.app.br", "https://www.api.epr.app.br", "http://localhost:5173"],
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
         "allow_headers": ["Content-Type", "Authorization"],
         "expose_headers": ["Content-Type"],
@@ -1322,7 +1322,7 @@ def forgot_password():
         # Enviar email
         try:
             from email_service import send_email
-            reset_url = f"https://www.fartgreen.fun/#/reset-password?token={reset_token}"
+            reset_url = f"https://www.api.epr.app.br/#/reset-password?token={reset_token}"
             html_body = f"""
             <!DOCTYPE html>
             <html lang="pt-BR">

@@ -105,7 +105,7 @@ def get_welcome_email_template(owner_name: str, license_type: str, start_date: s
                             </p>
                             
                             <div style="text-align: center; margin: 40px 0;">
-                                <a href="https://fartgreen.fun" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; text-decoration: none; padding: 16px 32px; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 6px rgba(102, 126, 234, 0.3);">
+                                <a href="https://api.epr.app.br" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; text-decoration: none; padding: 16px 32px; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 6px rgba(102, 126, 234, 0.3);">
                                     Acessar Dashboard
                                 </a>
                             </div>
@@ -224,7 +224,7 @@ def get_email_template(days_remaining: int, owner_name: str, license_type: str, 
                             </p>
                             
                             <div style="text-align: center; margin: 40px 0;">
-                                <a href="https://fartgreen.fun" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; text-decoration: none; padding: 16px 32px; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 6px rgba(102, 126, 234, 0.3);">
+                                <a href="https://api.epr.app.br" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; text-decoration: none; padding: 16px 32px; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 6px rgba(102, 126, 234, 0.3);">
                                     Renovar Licença Agora
                                 </a>
                             </div>
