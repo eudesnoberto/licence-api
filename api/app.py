@@ -37,7 +37,7 @@ app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1, x_
 CORS(
     app,
     resources={r"/*": {
-        "origins": ["https://api.epr.app.br", "https://www.api.epr.app.br", "http://localhost:5173"],
+        "origins": ["https://epr.app.br", "https://www.epr.app.br", "http://localhost:5173"],
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
         "allow_headers": ["Content-Type", "Authorization"],
         "expose_headers": ["Content-Type"],
