@@ -37,7 +37,7 @@ app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1, x_
 CORS(
     app,
     resources={r"/*": {
-        "origins": ["https://api.epr.app.br", "https://www.api.epr.app.br", "http://localhost:5173"],
+        "origins": ["https://epr.app.br", "https://www.epr.app.br", "http://localhost:5173"],
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
         "allow_headers": ["Content-Type", "Authorization"],
         "expose_headers": ["Content-Type"],
@@ -366,6 +366,43 @@ def verify():
     logger.info(f"VERIFY: Resposta final - allow={allow}, msg={msg[:50] if msg else 'N/A'}")
     
     return json_response(response_payload)
+
+
+@app.route("/servers", methods=["GET"])
+def get_servers():
+    """
+    Endpoint público para obter lista atualizada de servidores.
+    Usado pelos clientes AHK para atualizar dinamicamente a lista de servidores
+    sem precisar recompilar o executável.
+    
+    Retorna JSON com:
+    - version: versão da configuração
+    - timestamp: timestamp da última atualização
+    - servers: array de URLs dos servidores em ordem de prioridade
+    
+    Este endpoint permite atualizar a lista de servidores para 30k+ clientes
+    sem necessidade de recompilar e redistribuir o executável.
+    """
+    # Lê lista de servidores do config (pode ser sobrescrita via env)
+    servers_list = config.LICENSE_SERVERS.copy()
+    
+    # Pode adicionar lógica aqui para:
+    # - Filtrar servidores offline (health check)
+    # - Adicionar servidores dinamicamente baseado em região do cliente
+    # - Ler de banco de dados para configuração dinâmica
+    
+    now_utc = datetime.now(timezone.utc)
+    timestamp = now_utc.strftime("%Y%m%d%H%M%S")
+    
+    response = {
+        "version": 1,
+        "timestamp": int(timestamp),
+        "servers": servers_list,
+    }
+    
+    logger.info(f"SERVERS: Retornando lista com {len(servers_list)} servidores")
+    
+    return json_response(response)
 
 
 @app.route("/admin/devices", methods=["GET"])
@@ -1322,7 +1359,7 @@ def forgot_password():
         # Enviar email
         try:
             from email_service import send_email
-            reset_url = f"https://www.api.epr.app.br/#/reset-password?token={reset_token}"
+            reset_url = f"https://epr.app.br/#/reset-password?token={reset_token}"
             html_body = f"""
             <!DOCTYPE html>
             <html lang="pt-BR">

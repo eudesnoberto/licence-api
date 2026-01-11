@@ -33,7 +33,7 @@ Quando testa localmente (`http://127.0.0.1:5000`), o IP sempre será `127.0.0.1`
 
 ### 3. Testar em Produção
 
-Quando o cliente acessa via `https://api.fartgreen.fun`:
+Quando o cliente acessa via `https://api.epr.app.br`:
 
 - O Cloudflare Tunnel deve passar o IP real no header `X-Forwarded-For`
 - O `get_client_ip()` deve capturar corretamente
@@ -51,7 +51,7 @@ tunnel: <tunnel-id>
 credentials-file: C:\Users\...\.cloudflared\<tunnel-id>.json
 
 ingress:
-  - hostname: api.fartgreen.fun
+  - hostname: api.epr.app.br
     service: http://localhost:5000
     originRequest:
       # Garante que headers são preservados
@@ -65,7 +65,7 @@ ingress:
 Faça uma requisição e verifique os headers:
 
 ```bash
-curl -H "X-Forwarded-For: 1.2.3.4" https://api.fartgreen.fun/health
+curl -H "X-Forwarded-For: 1.2.3.4" https://api.epr.app.br/health
 ```
 
 ## 📊 Verificar no Dashboard

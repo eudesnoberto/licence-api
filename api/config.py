@@ -99,6 +99,23 @@ EMAIL_ALERT_DAYS = [3, 2, 1]  # Envia emails quando faltam 3, 2 e 1 dia
 # Durante este período, o cliente pode usar o sistema mesmo sem conexão com o servidor
 OFFLINE_GRACE_PERIOD_DAYS = int(os.getenv("OFFLINE_GRACE_PERIOD_DAYS", "7"))  # 7 dias padrão
 
+# ---------------------------------------------------------------------------
+# Lista de Servidores para Redundância
+# ---------------------------------------------------------------------------
+# Lista de servidores em ordem de prioridade para os clientes AHK
+# O cliente tentará cada servidor até encontrar um que funcione
+# IMPORTANTE: A ordem importa - primeiro é o servidor principal
+LICENSE_SERVERS = [
+    "https://api.epr.app.br",
+    "https://licence-api-6evg.onrender.com",
+    "https://api-epr.rj.r.appspot.com",
+]
+
+# Permite sobrescrever via variável de ambiente (formato: URL1,URL2,URL3)
+servers_env = os.getenv("LICENSE_SERVERS", "")
+if servers_env:
+    LICENSE_SERVERS = [s.strip() for s in servers_env.split(",") if s.strip()]
+
 
 
 
