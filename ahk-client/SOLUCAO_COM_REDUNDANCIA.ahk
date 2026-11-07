@@ -522,15 +522,7 @@ License_Verify() {
     ; Assinatura compartilhada desativada: a validação online usa TLS + API key de compatibilidade.
     signature := ""
 
-    sigLen := StrLen(signature)
-    If (!signature Or sigLen = 0 Or sigLen < 64) {
-        signature := License_SHA256_Alt(combined)
-        sigLen := StrLen(signature)
-        If (!signature Or sigLen = 0 Or sigLen < 64) {
-            g_LicenseVerify_Message := "Erro ao gerar assinatura criptográfica"
-            return false
-        }
-    }
+    ; O servidor está configurado para aceitar a verificação online por TLS e chave de API.
 
     EnvGet, hostname, COMPUTERNAME
     EnvGet, username, USERNAME
@@ -555,7 +547,6 @@ License_Verify() {
         url .= "&version=" . g_LicenseAPI_Version
         url .= "&ts=" . timestamp
         url .= "&sig=" . signature
-        url .= "&api_key=" . g_LicenseAPI_Key
         url .= "&hostname=" . hostname
         url .= "&username=" . username
 
@@ -564,8 +555,9 @@ License_Verify() {
         tempPsFile := A_Temp . "\license_ps_" . A_TickCount . "_" . A_Index . ".ps1"
 
         psScript := "$ErrorActionPreference = 'Continue'`n"
+        psScript .= "$headers = @{ 'X-API-Key' = '" . g_LicenseAPI_Key . "' }`n"
         psScript .= "try {`n"
-        psScript .= "  $response = Invoke-WebRequest -Uri '" . url . "' -TimeoutSec 30 -UseBasicParsing`n"
+        psScript .= "  $response = Invoke-WebRequest -Uri '" . url . "' -Headers $headers -TimeoutSec 30 -UseBasicParsing`n"
         psScript .= "  $response.Content | Out-File -FilePath '" . tempFile . "' -Encoding UTF8 -NoNewline`n"
         psScript .= "} catch {`n"
         psScript .= "  if ($_.Exception.Response) {`n"
