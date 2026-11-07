@@ -43,13 +43,13 @@ g_LicenseAPI_Servers := []
 
 ; Configurações de API
 g_LicenseAPI_Key := "CFEC44D0118C85FBA54A4B96C89140C6"
-g_LicenseAPI_Secret := "BF70ED46DC0E1A2A2D9B9488DE569D96A50E8EF4A23B8F79F45413371D8CAC2D"
+g_LicenseAPI_Secret := "" ; removido: assinatura de requisição compartilhada desativada na migração
 g_LicenseAPI_Version := "1.0.0"
 
 global g_LicenseVerify_DeviceId := ""
 global g_LicenseVerify_Message := ""
 global g_LicenseVerify_Offline := false
-g_LicenseOffline_GracePeriodDays := 7
+; Política offline: sem prazo de carência; tokens perpétuos continuam válidos sem limite de tempo.
 
 ; ============================================================================
 ; FUNÇÃO: License_LoadServersFromConfig() - Carrega servidores do cache ou baixa atualização
@@ -502,7 +502,7 @@ License_SHA256_Alt(text) {
 ; FUNÇÃO 3: License_Verify() - COM SUPORTE A REDUNDÂNCIA
 ; ============================================================================
 License_Verify() {
-    global g_LicenseAPI_Key, g_LicenseAPI_Secret, g_LicenseAPI_Version
+    global g_LicenseAPI_Key, g_LicenseAPI_Version
     global g_LicenseVerify_DeviceId, g_LicenseVerify_Message, g_LicenseVerify_Offline
     global g_LicenseAPI_Servers
 
@@ -519,8 +519,8 @@ License_Verify() {
     g_LicenseVerify_DeviceId := deviceId
 
     FormatTime, timestamp, , yyyyMMddHHmmss
-    combined := deviceId . "|" . g_LicenseAPI_Version . "|" . timestamp . "|" . g_LicenseAPI_Secret
-    signature := License_SHA256(combined)
+    ; Assinatura compartilhada desativada: a validação online usa TLS + API key de compatibilidade.
+    signature := ""
 
     sigLen := StrLen(signature)
     If (!signature Or sigLen = 0 Or sigLen < 64) {
@@ -769,74 +769,71 @@ License_Verify() {
 ; FUNÇÃO 4: License_Verify_Offline()
 ; ============================================================================
 License_Verify_Offline(licenseTokenJson) {
-    global g_LicenseOffline_GracePeriodDays
     global g_LicenseVerify_DeviceId, g_LicenseVerify_Message
 
     g_LicenseVerify_DeviceId := ""
     g_LicenseVerify_Message := ""
 
-    If (!licenseTokenJson Or StrLen(licenseTokenJson) = 0) {
-        g_LicenseVerify_Message := "Token de licença offline não encontrado"
+    ; O token novo deve conter payload_b64 e assinatura RSA-SHA256.
+    payloadB64 := ""
+    signatureB64 := ""
+    If (RegExMatch(licenseTokenJson, """payload_b64""\s*:\s*""([A-Za-z0-9+/=]+)""", match))
+        payloadB64 := match1
+    If (RegExMatch(licenseTokenJson, """signature""\s*:\s*""([A-Za-z0-9+/=]+)""", match))
+        signatureB64 := match1
+
+    If (!payloadB64 Or !signatureB64) {
+        g_LicenseVerify_Message := "Token offline antigo ou inválido. Conecte-se à internet para renovar."
         return false
     }
 
-    payloadRaw := ""
-    signature := ""
+    ; Verifica a assinatura com a chave PÚBLICA. Nenhum segredo privado fica no cliente.
+    publicKeyXml := "<RSAKeyValue><Modulus>rdzApwPBMi3eBoR9M6NJjp9+1SeXTvSbBwYCG/1AUtDg/t0rvyj4emMq5QbxENPwfTKP4yrOaZb2QJG6ZJmzNCLvMnbfr2kr3iBnB9r8ppVWx4BGBnGYfWoa2XpH76EtFjAabQLNzjF5OwmDDq8I9XVvsxfou5FQcPV1qvhKbJFJgC4CD0YEYevFXRdqhnH28iUAsUDNTVPi5C/vN4ytx6MCZH9uoXpF0ODkNfHaCK+BvTmFNbLrupdCeIuV1fMi/UuxQjr21NGYhUPbjHqVmhQfrtuzxeXuARFLaxcJBMfKLHAuZYu8wcBc5Lz0QlGjVCvBgOYXeUWOSRDF6dJQtBeUWPUWsSG1aPmXYWbX+TnjtAwSvgMfHH5PUzht1thg94y55QHorThb6T/hCkPLtZhjF4ZIf5hhRs3rCYHu7Go7125emU95SrXO0jS6ZiLlWi4UHnN3+k7fs33kJpkQbLXyRDnogwdEQdHPvs+gZdZIYLvMN0QCEhIrABIXpNsF</Modulus><Exponent>AQAB</Exponent></RSAKeyValue>"
 
-    If (InStr(licenseTokenJson, """payload_raw"":""") > 0) {
-        RegExMatch(licenseTokenJson, """payload_raw"":""([^""]+)""", match)
-        If (match1) {
-            StringReplace, payloadRaw, match1, \", ", All
-            StringReplace, payloadRaw, payloadRaw, \\, \, All
-        }
+    tempPsFile := A_Temp . "\license_verify_" . A_TickCount . ".ps1"
+    payloadFile := A_Temp . "\license_payload_" . A_TickCount . ".json"
+    psScript := "$ErrorActionPreference = 'Stop'`n"
+    psScript .= "$payload = [Convert]::FromBase64String('" . payloadB64 . "')`n"
+    psScript .= "$signature = [Convert]::FromBase64String('" . signatureB64 . "')`n"
+    psScript .= "$rsa = New-Object System.Security.Cryptography.RSACryptoServiceProvider`n"
+    psScript .= "$rsa.FromXmlString('" . publicKeyXml . "')`n"
+    psScript .= "$sha = [System.Security.Cryptography.SHA256]::Create()`n"
+    psScript .= "if (-not $rsa.VerifyData($payload, $sha, $signature)) { exit 2 }`n"
+    psScript .= "[System.IO.File]::WriteAllBytes('" . payloadFile . "', $payload)`n"
+    psScript .= "exit 0`n"
+
+    FileDelete, %tempPsFile%
+    FileDelete, %payloadFile%
+    FileAppend, %psScript%, %tempPsFile%
+    RunWait, %ComSpec% /c powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "%tempPsFile%" >nul 2>&1, , Hide
+    verifyExitCode := ErrorLevel
+    FileDelete, %tempPsFile%
+
+    If (verifyExitCode != 0) {
+        FileDelete, %payloadFile%
+        g_LicenseVerify_Message := "Assinatura RSA do token offline inválida"
+        return false
     }
 
-    If (InStr(licenseTokenJson, """signature"":""") > 0) {
-        RegExMatch(licenseTokenJson, """signature"":""([^""]+)""", match)
-        If (match1) {
-            signature := match1
-        }
-    }
-
-    If (!payloadRaw Or !signature) {
-        g_LicenseVerify_Message := "Token de licença offline inválido"
+    FileRead, payloadRaw, %payloadFile%
+    FileDelete, %payloadFile%
+    If (!payloadRaw) {
+        g_LicenseVerify_Message := "Payload offline vazio"
         return false
     }
 
     deviceId := ""
     expiresAt := ""
     status := ""
+    If (RegExMatch(payloadRaw, """device_id""\s*:\s*""([^""]+)""", match))
+        deviceId := match1
+    If (RegExMatch(payloadRaw, """expires_at""\s*:\s*""([^""]+)""", match))
+        expiresAt := match1
+    If (RegExMatch(payloadRaw, """status""\s*:\s*""([^""]+)""", match))
+        status := match1
 
-    If (InStr(payloadRaw, """device_id"":""") > 0) {
-        RegExMatch(payloadRaw, """device_id"":""([^""]+)""", match)
-        If (match1) {
-            deviceId := match1
-        }
-    }
-
-    If (InStr(payloadRaw, """expires_at"":""") > 0) {
-        RegExMatch(payloadRaw, """expires_at"":""([^""]+)""", match)
-        If (match1) {
-            expiresAt := match1
-        }
-    } Else If (InStr(payloadRaw, """expires_at"":null") > 0) {
-        expiresAt := ""
-    }
-
-    If (InStr(payloadRaw, """status"":""") > 0) {
-        RegExMatch(payloadRaw, """status"":""([^""]+)""", match)
-        If (match1) {
-            status := match1
-        }
-    }
-
-    If (!deviceId) {
-        g_LicenseVerify_Message := "Token de licença offline inválido"
-        return false
-    }
-
-    If (status != "active") {
-        g_LicenseVerify_Message := "Licença offline não está ativa"
+    If (!deviceId Or status != "active") {
+        g_LicenseVerify_Message := "Licença offline inativa ou token inválido"
         return false
     }
 
@@ -846,31 +843,21 @@ License_Verify_Offline(licenseTokenJson) {
         return false
     }
 
-    If (expiresAt And StrLen(expiresAt) > 0) {
+    ; Sem limite de carência offline: licenças perpétuas (expires_at null) não expiram.
+    ; Licenças com data final continuam respeitando a expiração registrada no servidor.
+    If (expiresAt != "") {
+        expiresDate := expiresAt
+        StringReplace, expiresDate, expiresDate, -, , All
+        expiresDate := SubStr(expiresDate, 1, 8)
         FormatTime, currentDate, , yyyyMMdd
-        StringReplace, expiresDate, expiresAt, -, , All
-
-        currentYear := SubStr(currentDate, 1, 4)
-        currentMonth := SubStr(currentDate, 5, 2)
-        currentDay := SubStr(currentDate, 7, 2)
-
-        expiresYear := SubStr(expiresDate, 1, 4)
-        expiresMonth := SubStr(expiresDate, 5, 2)
-        expiresDay := SubStr(expiresDate, 7, 2)
-
-        currentDays := (currentYear * 365) + (currentMonth * 30) + currentDay
-        expiresDays := (expiresYear * 365) + (expiresMonth * 30) + expiresDay
-        daysRemaining := expiresDays - currentDays
-
-        gracePeriodEnd := daysRemaining + g_LicenseOffline_GracePeriodDays
-        If (gracePeriodEnd < 0) {
-            g_LicenseVerify_Message := "Licença offline expirada há mais de " . g_LicenseOffline_GracePeriodDays . " dias"
+        if (expiresDate < currentDate) {
+            g_LicenseVerify_Message := "Licença offline expirada"
             return false
         }
     }
 
     g_LicenseVerify_DeviceId := deviceId
-    g_LicenseVerify_Message := "Licença válida (modo offline)"
+    g_LicenseVerify_Message := "Licença válida (assinatura RSA offline)"
     return true
 }
 
