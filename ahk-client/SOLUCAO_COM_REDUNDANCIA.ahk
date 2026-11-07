@@ -950,17 +950,23 @@ SetTimer, License_UpdateServersBackground, % (g_ConfigUpdateInterval * 1000)
 hasInternet := License_CheckInternet()
 
 If (!hasInternet) {
-    ; Sem internet: mostra mensagem mas NÃO fecha o programa
+    ; Sem internet: somente permite continuar com token RSA válido já salvo.
+    deviceId := License_GetDeviceId()
+    tokenJson := License_LoadToken()
+    If (tokenJson And License_Verify_Offline(tokenJson)) {
+        g_LicenseVerify_Offline := true
+        g_LicenseVerify_Message := "Licença válida offline (sem prazo de carência)"
+        Goto, SkipLicenseCheck
+    }
+
     SoundSet, 10
-    Progress, CTRED b fs15 fm12 zh0 w1360, FALHA NA CONEXAO COM A INTERNET`nPOR FAVOR TENTE NOVAMENTE MAIS TARDE.`n`n.,,Countdowner
+    Progress, CTRED b fs15 fm12 zh0 w1360, SEM INTERNET E SEM TOKEN OFFLINE VALIDO`nCONECTE-SE PARA VALIDAR A LICENCA.`n`n.,,Countdowner
     WinSet, TransColor, 000000 240, Countdowner
     Sleep 7000
     Progress, Off
     SoundSet, 10
-
-    ; Informa ao usuário que não há internet e pula verificação de licença
-    ; O programa continua executando normalmente
-    Goto, SkipLicenseCheck
+    MsgBox, 16, Licença não validada, Sem conexão e sem um token offline RSA válido. Conecte-se à internet para validar a licença.
+    ExitApp
 }
 
 ; ============================================================================
