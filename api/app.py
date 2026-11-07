@@ -344,6 +344,7 @@ def verify():
         "features": config_payload.get("features", []),
     }
     payload_raw = json.dumps(license_payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    payload_b64 = base64.b64encode(payload_raw.encode("utf-8")).decode("ascii")
     signature = sign_payload(payload_raw) if allow else None
 
     license_token = None
@@ -352,6 +353,7 @@ def verify():
             "algorithm": "RSA-SHA256",
             "payload": license_payload,
             "payload_raw": payload_raw,
+            "payload_b64": payload_b64,
             "signature": signature,
         }
     elif allow:
