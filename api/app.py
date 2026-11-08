@@ -191,6 +191,31 @@ def ping():
     }, 200)
 
 
+@app.route("/__temporary_rsa_check", methods=["GET"])
+def temporary_rsa_check():
+    """Diagnóstico temporário: expõe apenas a chave PÚBLICA, nunca a privada."""
+    supplied = (request.headers.get("X-API-Key") or "").strip()
+    expected = (config.API_KEY or "").strip()
+    if not expected or not hmac.compare_digest(supplied, expected):
+        return json_response({"error": "Unauthorized"}, 401)
+
+    from cryptography.hazmat.primitives.asymmetric import rsa
+    from license_signing import _load_private_key
+
+    key = _load_private_key()
+    if key is None:
+        return json_response({"error": "RSA signing key not configured"}, 503)
+    public = key.public_key().public_numbers()
+    modulus_bytes = public.n.to_bytes((public.n.bit_length() + 7) // 8, "big")
+    exponent_bytes = public.e.to_bytes((public.e.bit_length() + 7) // 8, "big")
+    return json_response({
+        "status": "ok",
+        "rsa_bits": key.key_size,
+        "modulus_b64": base64.b64encode(modulus_bytes).decode("ascii"),
+        "exponent_b64": base64.b64encode(exponent_bytes).decode("ascii"),
+    }, 200)
+
+
 @app.route("/verify", methods=["GET"])
 def verify():
     id_ = (request.args.get("id") or "").strip()
