@@ -3,10 +3,10 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 # Banco de dados
 # Suporta SQLite (local) ou MySQL (remoto)
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.getenv("DB_PATH", os.path.join(BASE_DIR, "license.db"))
 
