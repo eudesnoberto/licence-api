@@ -22,6 +22,12 @@ MYSQL_DATABASE = os.getenv("MYSQL_DATABASE", "")
 MYSQL_USER = os.getenv("MYSQL_USER", "")
 MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "")
 
+# TLS obrigatório para MySQL remoto (Aiven). O caminho aponta para o Secret File
+# contendo o certificado CA oficial do provedor.
+MYSQL_SSL_ENABLED = os.getenv("MYSQL_SSL_ENABLED", "true").lower() == "true"
+MYSQL_SSL_VERIFY_IDENTITY = os.getenv("MYSQL_SSL_VERIFY_IDENTITY", "true").lower() == "true"
+MYSQL_SSL_CA = os.getenv("MYSQL_SSL_CA", "").strip()
+
 # Connection string MySQL (para uso com pymysql)
 if DB_TYPE == "mysql":
     MYSQL_CONNECTION_STRING = f"mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}?charset=utf8mb4"
