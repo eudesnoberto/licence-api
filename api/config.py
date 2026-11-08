@@ -22,6 +22,12 @@ MYSQL_DATABASE = os.getenv("MYSQL_DATABASE", "")
 MYSQL_USER = os.getenv("MYSQL_USER", "")
 MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "")
 
+# TLS obrigatório para MySQL remoto (Aiven). O caminho aponta para o Secret File
+# contendo o certificado CA oficial do provedor.
+MYSQL_SSL_ENABLED = os.getenv("MYSQL_SSL_ENABLED", "true").lower() == "true"
+MYSQL_SSL_VERIFY_IDENTITY = os.getenv("MYSQL_SSL_VERIFY_IDENTITY", "true").lower() == "true"
+MYSQL_SSL_CA = os.getenv("MYSQL_SSL_CA", "").strip()
+
 # Connection string MySQL (para uso com pymysql)
 if DB_TYPE == "mysql":
     MYSQL_CONNECTION_STRING = f"mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}?charset=utf8mb4"
@@ -37,7 +43,10 @@ SHARED_SECRET = os.getenv("SHARED_SECRET", "")
 # Padrão: 4 horas (14400s) para permitir diferenças de fuso horário e relógios desincronizados
 # Em produção, pode ser reduzido para 300s (5 minutos) se necessário
 MAX_TIME_SKEW = int(os.getenv("MAX_TIME_SKEW", "14400"))
-REQUIRE_SIGNATURE = os.getenv("REQUIRE_SIGNATURE", "true").lower() == "true"
+# Clientes novos não usam segredo compartilhado no executável. Mantenha false durante a migração.
+REQUIRE_SIGNATURE = os.getenv("REQUIRE_SIGNATURE", "false").lower() == "true"
+# Chave privada RSA em PEM codificada em Base64. Nunca versionar esta chave.
+LICENSE_SIGNING_PRIVATE_KEY_B64 = os.getenv("LICENSE_SIGNING_PRIVATE_KEY_B64", "").strip()
 REQUIRE_API_KEY = os.getenv("REQUIRE_API_KEY", "true").lower() == "true"
 ALLOW_AUTO_PROVISION = os.getenv("ALLOW_AUTO_PROVISION", "false").lower() == "true"
 

@@ -10,6 +10,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 
 import config
+from license_signing import sign_payload
 from db import get_conn, get_cursor, USE_MYSQL
 from license_service import (
     fetch_device,
@@ -190,6 +191,31 @@ def ping():
     }, 200)
 
 
+@app.route("/__temporary_rsa_check", methods=["GET"])
+def temporary_rsa_check():
+    """Diagnóstico temporário: expõe apenas a chave PÚBLICA, nunca a privada."""
+    supplied = (request.headers.get("X-API-Key") or "").strip()
+    expected = (config.API_KEY or "").strip()
+    if not expected or not hmac.compare_digest(supplied, expected):
+        return json_response({"error": "Unauthorized"}, 401)
+
+    from cryptography.hazmat.primitives.asymmetric import rsa
+    from license_signing import _load_private_key
+
+    key = _load_private_key()
+    if key is None:
+        return json_response({"error": "RSA signing key not configured"}, 503)
+    public = key.public_key().public_numbers()
+    modulus_bytes = public.n.to_bytes((public.n.bit_length() + 7) // 8, "big")
+    exponent_bytes = public.e.to_bytes((public.e.bit_length() + 7) // 8, "big")
+    return json_response({
+        "status": "ok",
+        "rsa_bits": key.key_size,
+        "modulus_b64": base64.b64encode(modulus_bytes).decode("ascii"),
+        "exponent_b64": base64.b64encode(exponent_bytes).decode("ascii"),
+    }, 200)
+
+
 @app.route("/verify", methods=["GET"])
 def verify():
     id_ = (request.args.get("id") or "").strip()
@@ -331,10 +357,9 @@ def verify():
 
     config_payload = build_config_payload(device, effective_end)
 
-    # ------------------------------------------------------------------
-    # Token de licença assinado (para cache/offline no cliente)
-    # Assinatura HMAC-SHA256 sobre o JSON serializado do payload.
-    # ------------------------------------------------------------------
+    # Token offline assinado com RSA-SHA256. A chave privada existe somente no servidor.
+    # Sem a variável LICENSE_SIGNING_PRIVATE_KEY_B64, a API continua validando online,
+    # mas não emite token offline até a chave ser configurada.
     license_payload = {
         "device_id": id_,
         "license_type": device.get("license_type"),
@@ -344,17 +369,20 @@ def verify():
         "features": config_payload.get("features", []),
     }
     payload_raw = json.dumps(license_payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
-    signature = hmac.new(
-        config.SHARED_SECRET.encode("utf-8"),
-        payload_raw.encode("utf-8"),
-        hashlib.sha256,
-    ).hexdigest()
+    payload_b64 = base64.b64encode(payload_raw.encode("utf-8")).decode("ascii")
+    signature = sign_payload(payload_raw) if allow else None
 
-    license_token = {
-        "payload": license_payload,
-        "payload_raw": payload_raw,
-        "signature": signature,
-    }
+    license_token = None
+    if signature:
+        license_token = {
+            "algorithm": "RSA-SHA256",
+            "payload": license_payload,
+            "payload_raw": payload_raw,
+            "payload_b64": payload_b64,
+            "signature": signature,
+        }
+    elif allow:
+        logger.error("VERIFY: token offline não emitido; configure LICENSE_SIGNING_PRIVATE_KEY_B64 no ambiente.")
 
     response_payload = {
         "allow": allow,
@@ -1710,7 +1738,7 @@ if __name__ == "__main__":
     # Suporta variável de ambiente PORT (para Railway, Render, Fly.io, etc.)
     import os
     port = int(os.environ.get("PORT", 5000))
-    debug_mode = os.environ.get("FLASK_ENV", "development") != "production"
+    debug_mode = os.environ.get("FLASK_DEBUG", "false").lower() == "true"
     
     # Em produção, use gunicorn/uwsgi + nginx e debug=False
     app.run(host="0.0.0.0", port=port, debug=debug_mode)
