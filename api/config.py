@@ -116,8 +116,7 @@ OFFLINE_GRACE_PERIOD_DAYS = int(os.getenv("OFFLINE_GRACE_PERIOD_DAYS", "7"))  # 
 # IMPORTANTE: A ordem importa - primeiro é o servidor principal
 LICENSE_SERVERS = [
     "https://api.epr.app.br",
-    "https://licence-api-6evg.onrender.com",
-    "https://api-epr.rj.r.appspot.com",
+    "https://licence-api-chei.onrender.com",
 ]
 
 # Permite sobrescrever via variável de ambiente (formato: URL1,URL2,URL3)
