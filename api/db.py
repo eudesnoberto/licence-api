@@ -30,19 +30,39 @@ def _hash_admin_password(raw: str) -> str:
 
 
 def _get_mysql_connection():
-    """Cria conexão MySQL"""
+    """Cria conexão MySQL com TLS e validação do certificado do servidor."""
     if not MYSQL_AVAILABLE:
         raise ImportError("pymysql não está instalado. Execute: pip install pymysql")
-    
+
+    if not config.MYSQL_SSL_ENABLED:
+        raise RuntimeError(
+            "Conexão MySQL recusada: MYSQL_SSL_ENABLED deve permanecer true."
+        )
+
+    if not config.MYSQL_SSL_VERIFY_IDENTITY:
+        raise RuntimeError(
+            "Conexão MySQL recusada: MYSQL_SSL_VERIFY_IDENTITY deve permanecer true."
+        )
+
+    ssl_ca = config.MYSQL_SSL_CA
+    if not ssl_ca or not os.path.isfile(ssl_ca):
+        raise RuntimeError(
+            "Certificado CA do MySQL não encontrado. Configure MYSQL_SSL_CA "
+            "com o caminho do Secret File do certificado CA oficial do Aiven."
+        )
+
     return pymysql.connect(
         host=config.MYSQL_HOST,
         port=config.MYSQL_PORT,
         user=config.MYSQL_USER,
         password=config.MYSQL_PASSWORD,
         database=config.MYSQL_DATABASE,
-        charset='utf8mb4',
+        charset="utf8mb4",
         cursorclass=pymysql.cursors.DictCursor,
-        autocommit=False
+        autocommit=False,
+        ssl_ca=ssl_ca,
+        ssl_verify_cert=True,
+        ssl_verify_identity=True,
     )
 
 
