@@ -20,13 +20,12 @@ Esta branch prepara a emissão de tokens offline assinados com RSA-SHA256. O ser
 4. No Render, cadastre o certificado como **Secret File**, por exemplo com o nome `aiven-ca.pem`.
 5. Configure `MYSQL_SSL_CA` com o caminho exato do Secret File mostrado pelo Render (por exemplo, `/etc/secrets/aiven-ca.pem`, se esse for o caminho exibido).
 6. Gere/guarde uma chave privada RSA PKCS#8 de pelo menos 3072 bits. A chave privada não deve ser adicionada ao Git.
-7. Converta o arquivo PEM inteiro para Base64 em uma única linha, sem cabeçalhos adicionais:
-   `[Convert]::ToBase64String([IO.File]::ReadAllBytes("license_signing_private.pem"))`
-8. Cadastre o resultado como variável secreta `LICENSE_SIGNING_PRIVATE_KEY_B64`.
+7. Em cada serviço que assina tokens, cadastre-a em **Secret Files** com o nome `license_signing_private.pem`. A API a lê de `/etc/secrets/license_signing_private.pem`.
+8. Para desenvolvimento local, defina `LICENSE_SIGNING_PRIVATE_KEY_FILE` com o caminho de um PEM de desenvolvimento. A variável Base64 antiga continua aceita como fallback temporário, mas não é necessária no Render.
 9. Mantenha `REQUIRE_API_KEY=true`, `API_KEY` e `SHARED_SECRET` configurados com os valores atuais.
 10. Defina `REQUIRE_SIGNATURE=false` durante a migração. Não habilite novamente sem primeiro migrar todos os clientes online.
 
-Sem `LICENSE_SIGNING_PRIVATE_KEY_B64`, a API continua respondendo às verificações online, mas não emite token offline. Isso evita emitir um token sem assinatura verificável.
+Sem a chave privada, a API continua respondendo às verificações online, mas não emite token offline. Isso evita emitir um token sem assinatura verificável.
 
 ## Teste seguro usando o mesmo banco
 
@@ -51,7 +50,7 @@ Execute dentro da pasta `api` com `python smoke_test_readonly.py`. O script não
 
 1. Faça backup do MySQL/Aiven e confirme que o backup pode ser restaurado.
 2. Cadastre a CA da Aiven como Secret File e configure `MYSQL_SSL_CA`.
-3. Cadastre a chave privada RSA como variável secreta, sem colocá-la no GitHub.
+3. Cadastre a mesma chave privada RSA como Secret File nos serviços que emitem tokens, sem colocá-la no GitHub.
 4. Execute `python smoke_test_readonly.py` no ambiente de teste ou Shell autorizado. Ele não altera os dados.
 5. Valide o cliente AHK em Windows com uma licença de teste isolada antes de usar a licença real.
 6. Só depois revise a PR e planeje a publicação em produção.

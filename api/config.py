@@ -45,7 +45,8 @@ SHARED_SECRET = os.getenv("SHARED_SECRET", "")
 MAX_TIME_SKEW = int(os.getenv("MAX_TIME_SKEW", "14400"))
 # Clientes novos não usam segredo compartilhado no executável. Mantenha false durante a migração.
 REQUIRE_SIGNATURE = os.getenv("REQUIRE_SIGNATURE", "false").lower() == "true"
-# Chave privada RSA em PEM codificada em Base64. Nunca versionar esta chave.
+# Fallback legado: chave RSA PEM codificada em Base64. Prefira o Secret File.
+# Nunca versionar nem registrar o conteúdo desta chave.
 LICENSE_SIGNING_PRIVATE_KEY_B64 = os.getenv("LICENSE_SIGNING_PRIVATE_KEY_B64", "").strip()
 REQUIRE_API_KEY = os.getenv("REQUIRE_API_KEY", "true").lower() == "true"
 ALLOW_AUTO_PROVISION = os.getenv("ALLOW_AUTO_PROVISION", "false").lower() == "true"

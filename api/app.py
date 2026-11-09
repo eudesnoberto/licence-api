@@ -333,8 +333,8 @@ def verify():
     config_payload = build_config_payload(device, effective_end)
 
     # Token offline assinado com RSA-SHA256. A chave privada existe somente no servidor.
-    # Sem a variável LICENSE_SIGNING_PRIVATE_KEY_B64, a API continua validando online,
-    # mas não emite token offline até a chave ser configurada.
+    # A chave privada vem do Secret File do Render; o módulo de assinatura também
+    # aceita a variável Base64 antiga durante a migração.
     license_payload = {
         "device_id": id_,
         "license_type": device.get("license_type"),
@@ -345,19 +345,29 @@ def verify():
     }
     payload_raw = json.dumps(license_payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     payload_b64 = base64.b64encode(payload_raw.encode("utf-8")).decode("ascii")
-    signature = sign_payload(payload_raw) if allow else None
+    try:
+        signature = sign_payload(payload_raw) if allow else None
+    except RuntimeError:
+        logger.exception("VERIFY: arquivo da chave RSA offline inválido ou inacessível")
+        return json_response({
+            "allow": False,
+            "msg": "Assinatura offline indisponível no servidor.",
+            "config": config_payload,
+            "license_token": None,
+        }, 503)
 
     license_token = None
     if signature:
         license_token = {
             "algorithm": "RSA-SHA256",
+            "signature_alg": "RSA-SHA256",
             "payload": license_payload,
             "payload_raw": payload_raw,
             "payload_b64": payload_b64,
             "signature": signature,
         }
     elif allow:
-        logger.error("VERIFY: token offline não emitido; configure LICENSE_SIGNING_PRIVATE_KEY_B64 no ambiente.")
+        logger.error("VERIFY: token offline não emitido; configure o Secret File RSA no serviço.")
 
     response_payload = {
         "allow": allow,

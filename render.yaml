@@ -3,7 +3,7 @@ services:
     name: licence-api
     env: python
     buildCommand: pip install -r api/requirements.txt
-    startCommand: cd api && python app.py
+    startCommand: cd api && gunicorn --config gunicorn.conf.py --bind 0.0.0.0:$PORT app:app
     envVars:
       - key: DB_TYPE
         value: mysql

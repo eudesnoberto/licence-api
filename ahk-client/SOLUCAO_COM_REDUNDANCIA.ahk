@@ -68,12 +68,12 @@ License_LoadServersFromConfig() {
             RegExMatch(cacheContent, """timestamp"":(\d+)", match)
             If (match1) {
                 cacheTime := match1
-                FormatTime, currentTime, , yyyyMMddHHmmss
-                currentTimeNum := currentTime
-                timeDiff := currentTimeNum - cacheTime
+                currentTime := A_NowUTC
+                EnvSub, currentTime, %cacheTime%, Seconds
+                timeDiff := currentTime
                 
-                ; Se cache tem menos de g_ConfigCacheMaxAge segundos, usa ele
-                If (timeDiff < g_ConfigCacheMaxAge) {
+                ; Timestamp da API e relógio do cliente são comparados em UTC.
+                If (timeDiff >= 0 And timeDiff < g_ConfigCacheMaxAge) {
                     servers := License_ParseServerConfig(cacheContent)
                     If (servers.Length() > 0) {
                         g_LicenseAPI_Servers := servers
@@ -270,7 +270,7 @@ License_SaveServerConfig(servers) {
     }
     
     ; Monta JSON com timestamp
-    FormatTime, timestamp, , yyyyMMddHHmmss
+    timestamp := A_NowUTC
     
     ; Constrói JSON de forma segura usando Chr(34) para aspas duplas
     quote := Chr(34)
@@ -518,7 +518,7 @@ License_Verify() {
 
     g_LicenseVerify_DeviceId := deviceId
 
-    FormatTime, timestamp, , yyyyMMddHHmmss
+    timestamp := A_NowUTC
     ; Assinatura compartilhada desativada: a validação online usa TLS + API key de compatibilidade.
     signature := ""
 
@@ -780,7 +780,7 @@ License_Verify_Offline(licenseTokenJson) {
     }
 
     ; Verifica a assinatura com a chave PÚBLICA. Nenhum segredo privado fica no cliente.
-    publicKeyXml := "<RSAKeyValue><Modulus>rdzApwPBMi3eBoR9M6NJjp9+1SeXTvSbBwYCG/1AUtDg/t0rvyj4emMq5QbxENPwfTKP4yrOaZb2QJG6ZJmzNCLvMnbfr2kr3iBnB9r8ppVWx4BGBnGYfWoa2XpH76EtFjAabQLNzjF5OwmDDq8I9XVvsxfou5FQcPV1qvhKbJFJgC4CD0YEYevFXRdqhnH28iUAsUDNTVPi5C/vN4ytx6MCZH9uoXpF0ODkNfHaCK+BvTmFNbLrupdCeIuV1fMi/UuxQjr21NGYhUPbjHqVmhQfrtuzxeXuARFLaxcJBMfKLHAuZYu8wcBc5Lz0QlGjVCvBgOYXeUWOSRDF6dJQtBeUWPUWsSG1aPmXYWbX+TnjtAwSvgMfHH5PUzht1thg94y55QHorThb6T/hCkPLtZhjF4ZIf5hhRs3rCYHu7Go7125emU95SrXO0jS6ZiLlWi4UHnN3+k7fs33kJpkQbLXyRDnogwdEQdHPvs+gZdZIYLvMN0QCEhIrABIXpNsF</Modulus><Exponent>AQAB</Exponent></RSAKeyValue>"
+    publicKeyXml := "<RSAKeyValue><Modulus>yQZto8JpopRuzz0l+5sXIbixta2IrpBkJQdEGPpS2PyEZGR1PwcqbGW565c50fkxNgiPL1UMYaD+rc98UVuVAMyV0oyKB7TA+XQP4NjG9zWGv5d8hgmqYJnr/ppfTGPiQp7SIipJcxK4KlMAD6kjDiFkbvUqn3Wcqvg+cv4rMzjBFTU8b9Hw8i2+CjfeFmdOKV8By7IW2GAb+Kg64I7Wi0xW6BuYNsBWkBJ1Y5Y0SlmlEvpMZK+XgqDR0xZRkqTfD2UOXPESlqufcsl/KM1hSCN20dOuDA1SpW6cxsazF3Uj9sNKVWECrJH93lE3WeGUuLLptZBkiIYWy3kNm6H2hC+7tihWIt/K3ebcVla0D10+EolnkLcrsBhwqVgmIV4RdBY/41ZF2fZZtmJp0w8jiohSsrldrnIm2BU2NehtlFIAGOimhRBR0KjIZZRuE7SDmwoONhkOd6OVLuDtePdAqv//F4gtyD1ekCRxPStLU0R50NMzG/xagnPDZmDdo/Kv</Modulus><Exponent>AQAB</Exponent></RSAKeyValue>"
 
     tempPsFile := A_Temp . "\license_verify_" . A_TickCount . ".ps1"
     payloadFile := A_Temp . "\license_payload_" . A_TickCount . ".json"
@@ -841,7 +841,7 @@ License_Verify_Offline(licenseTokenJson) {
         expiresDate := expiresAt
         StringReplace, expiresDate, expiresDate, -, , All
         expiresDate := SubStr(expiresDate, 1, 8)
-        FormatTime, currentDate, , yyyyMMdd
+        currentDate := SubStr(A_NowUTC, 1, 8)
         if (expiresDate < currentDate) {
             g_LicenseVerify_Message := "Licença offline expirada"
             return false

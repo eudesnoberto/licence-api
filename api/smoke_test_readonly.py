@@ -3,13 +3,12 @@
 Execute dentro da pasta api: python smoke_test_readonly.py
 Não chama init_db(), não executa /verify e não altera registros.
 """
-import base64
 import sys
 
 import config
 from db import _get_mysql_connection
-from license_signing import sign_payload
-from cryptography.hazmat.primitives import hashes, serialization
+from license_signing import load_private_key, sign_payload
+from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 
 
@@ -38,8 +37,9 @@ def main():
     signature_b64 = sign_payload('{"smoke_test":"rsa-sha256"}')
     if not signature_b64:
         raise RuntimeError("Chave RSA não carregada; token offline não será emitido.")
-    pem = base64.b64decode(config.LICENSE_SIGNING_PRIVATE_KEY_B64, validate=True)
-    private_key = serialization.load_pem_private_key(pem, password=None)
+    private_key = load_private_key()
+    if private_key is None:
+        raise RuntimeError("Chave RSA não carregada; token offline não será emitido.")
     private_key.public_key().verify(
         base64.b64decode(signature_b64, validate=True),
         b'{"smoke_test":"rsa-sha256"}',
