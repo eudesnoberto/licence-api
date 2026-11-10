@@ -188,7 +188,9 @@ def detect_clone_usage(device_id: str, current_ip: str, current_hostname: str) -
         if len(recent_accesses) < 2:
             return (False, None)  # Não há acessos suficientes para detectar clone
         
-        # Agrupa por IP
+        # IPs podem mudar entre IPv4 e IPv6 na mesma máquina. Só considere
+        # clonagem quando os IPs diferentes também estiverem associados a
+        # mais de um hostname conhecido.
         unique_ips = set()
         unique_hostnames = set()
         
@@ -207,14 +209,17 @@ def detect_clone_usage(device_id: str, current_ip: str, current_hostname: str) -
             if ip:
                 unique_ips.add(ip)
             if hostname:
-                unique_hostnames.add(hostname)
+                unique_hostnames.add(str(hostname).strip().casefold())
         
-        # Se há mais IPs únicos do que o permitido, é clone
-        if len(unique_ips) > config.MAX_SIMULTANEOUS_IPS:
-            ips_list = ", ".join(sorted(unique_ips))
+        # Mudança de endereço IPv4/IPv6 no mesmo hostname não é evidência
+        # suficiente de que o Device ID esteja sendo usado em outro aparelho.
+        if (
+            len(unique_ips) > config.MAX_SIMULTANEOUS_IPS
+            and len(unique_hostnames) > 1
+        ):
             return (
                 True,
-                f"Uso simultâneo detectado de {len(unique_ips)} IPs diferentes: {ips_list}. Licença bloqueada por possível clonagem."
+                f"Uso simultâneo detectado em {len(unique_hostnames)} equipamentos e {len(unique_ips)} IPs diferentes. Licença bloqueada por possível clonagem."
             )
         
         # Se o IP atual é diferente do último conhecido E há acessos recentes, pode ser clone
@@ -234,8 +239,8 @@ def detect_clone_usage(device_id: str, current_ip: str, current_hostname: str) -
                 last_hostname = ""
             
             # Se IP mudou E hostname mudou E há acessos recentes, suspeito
-            if (current_ip != last_ip and 
-                current_hostname != last_hostname and 
+            if (current_ip != last_ip and
+                str(current_hostname or "").strip().casefold() != str(last_hostname or "").strip().casefold() and
                 last_hostname and 
                 current_hostname and
                 len(recent_accesses) > 1):
