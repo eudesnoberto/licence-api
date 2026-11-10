@@ -6,7 +6,7 @@ import base64
 import logging
 from functools import wraps
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, g
 from flask_cors import CORS
 
 import config
@@ -28,6 +28,17 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
+
+
+@app.teardown_appcontext
+def _close_license_db_connection(exception=None):
+    conn = getattr(g, "_license_db_connection", None)
+    if conn is not None:
+        try:
+            if exception is not None:
+                conn.rollback()
+        finally:
+            conn.close()
 
 # Configura Flask para confiar em proxies (necessário para Cloudflare Tunnel)
 # Isso permite que request.remote_addr funcione corretamente com X-Forwarded-For

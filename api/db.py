@@ -1,8 +1,11 @@
 from contextlib import contextmanager
 import hashlib
 import sqlite3
+import threading
 from pathlib import Path
 import os
+
+from flask import g, has_request_context
 
 import config
 
@@ -80,8 +83,25 @@ def _execute_mysql_query(conn, query: str, params=None):
         raise
 
 
+_DB_INITIALIZED = False
+_DB_INIT_LOCK = threading.Lock()
+
+
 def init_db() -> None:
-    """Cria as tabelas básicas em SQLite ou MySQL, se ainda não existirem."""
+    """Inicializa o esquema uma vez por processo, com proteção para concorrência."""
+    global _DB_INITIALIZED
+    if _DB_INITIALIZED:
+        return
+
+    with _DB_INIT_LOCK:
+        if _DB_INITIALIZED:
+            return
+        _initialize_db_schema()
+        _DB_INITIALIZED = True
+
+
+def _initialize_db_schema() -> None:
+    """Cria ou atualiza as tabelas básicas em SQLite ou MySQL."""
     
     if USE_MYSQL:
         if not MYSQL_AVAILABLE:
@@ -421,11 +441,22 @@ def get_conn():
         if not MYSQL_AVAILABLE:
             raise ImportError("MySQL configurado mas pymysql não está instalado. Execute: pip install pymysql")
         
-        conn = _get_mysql_connection()
-        try:
-            yield conn
-        finally:
-            conn.close()
+        if has_request_context():
+            conn = getattr(g, "_license_db_connection", None)
+            if conn is None or not getattr(conn, "open", True):
+                conn = _get_mysql_connection()
+                g._license_db_connection = conn
+            try:
+                yield conn
+            except Exception:
+                conn.rollback()
+                raise
+        else:
+            conn = _get_mysql_connection()
+            try:
+                yield conn
+            finally:
+                conn.close()
     else:
         conn = sqlite3.connect(DB_PATH)
         conn.row_factory = sqlite3.Row
